@@ -1,0 +1,6 @@
+{
+  "name": "SurgeWatch",
+  "description": "Predictive hospital load intelligence platform. Forecast patient surges 3–7 days in advance with explainable AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
