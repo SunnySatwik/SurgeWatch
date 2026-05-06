@@ -1,14 +1,15 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Landing from './components/Landing';
 import Dashboard from './components/dashboard/Dashboard';
 
 export default function App() {
-  const [view, setView] = useState('landing');
+  const [view, setView] = useState(() => {
+    return localStorage.getItem('surgewatch_view') || 'landing';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('surgewatch_view', view);
+  }, [view]);
 
   return (
     <div className="antialiased font-sans transition-colors duration-500">
