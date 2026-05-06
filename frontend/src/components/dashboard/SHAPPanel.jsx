@@ -7,7 +7,7 @@ const SHAPPanel = ({ data }) => {
   const maxVal = Math.max(...shapData.map(d => Math.abs(d?.value ?? 0)), 1);
 
   return (
-    <div className="vision-card p-5 flex flex-col h-full">
+    <div className="vision-card p-5 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2.5">
@@ -40,7 +40,7 @@ const SHAPPanel = ({ data }) => {
       </div>
 
       {/* Bars */}
-      <div className="space-y-3 flex-1">
+      <div className="space-y-3">
         {shapData.map((item, i) => {
           const isNeg = item?.type === 'negative';
           const width = (Math.abs(item?.value ?? 0) / maxVal) * 100;

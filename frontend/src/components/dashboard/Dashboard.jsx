@@ -173,15 +173,15 @@ const Dashboard = ({ onBack }) => {
         </div>
 
         {/* ── Grid Content ── */}
-        <div className="flex-1 space-y-5 min-w-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start auto-rows-min min-w-0 pb-20">
 
-          {/* Row 1: Chart + KPI + SHAP */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start min-w-0">
-
+          {/* LEFT COLUMN: Forecast, Recommendations, Departments */}
+          <div className="lg:col-span-7 flex flex-col gap-5 min-w-0 h-fit justify-start">
+            
             {/* Forecast Chart Card */}
             <motion.div
               style={{ x: mousePos.x * 12, y: mousePos.y * 8 }}
-              className={`lg:col-span-7 vision-card p-6 glass-reflection min-w-0 h-fit ${risk.glow}`}
+              className={`vision-card p-6 glass-reflection min-w-0 h-fit shrink-0 flex flex-col ${risk.glow}`}
             >
               {/* Chart header */}
               <div className="flex items-start justify-between mb-4">
@@ -207,7 +207,7 @@ const Dashboard = ({ onBack }) => {
               </div>
 
               {/* Micro analytics strip */}
-              <div className="grid grid-cols-4 gap-3 mt-auto">
+              <div className="grid grid-cols-4 gap-3 mt-4">
                 <MicroStat label="Today's Load" value={`${currentData?.load ?? 0}%`} up />
                 <MicroStat label="Patients" value={currentData?.expectedPatients ?? 0} up />
                 <MicroStat label="Confidence" value={`${currentData?.confidence ?? 0}%`} neutral />
@@ -215,20 +215,24 @@ const Dashboard = ({ onBack }) => {
               </div>
             </motion.div>
 
-            {/* KPI Column */}
-            <div className="lg:col-span-5 grid grid-cols-1 gap-5 min-w-0">
-              <KPIOverlay data={currentData} />
-              <SHAPPanel data={currentData} />
+            {/* AI Directives */}
+            <div className="min-w-0 h-fit shrink-0">
+              <Recommendations actions={currentData?.recommendations ?? []} riskLevel={currentData?.risk} />
+            </div>
+
+            {/* Additional Analytics */}
+            <div className="min-w-0 h-fit shrink-0">
+              <DepartmentSection departments={currentData?.departments ?? []} />
             </div>
           </div>
 
-          {/* Row 2: Recommendations + Departments */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-w-0">
-            <div className="lg:col-span-4 min-w-0">
-              <Recommendations actions={currentData?.recommendations ?? []} riskLevel={currentData?.risk} />
+          {/* RIGHT COLUMN: KPI Stack, SHAP */}
+          <div className="lg:col-span-5 flex flex-col gap-5 min-w-0 h-fit justify-start">
+            <div className="min-w-0 h-fit shrink-0">
+              <KPIOverlay data={currentData} />
             </div>
-            <div className="lg:col-span-8 min-w-0">
-              <DepartmentSection departments={currentData?.departments ?? []} />
+            <div className="min-w-0 h-fit shrink-0">
+              <SHAPPanel data={currentData} />
             </div>
           </div>
 
@@ -276,9 +280,9 @@ const NavItem = ({ icon: Icon, label, active = false }) => (
 );
 
 const MicroStat = ({ label, value, up, neutral }) => (
-  <div className="vision-glass-light px-3 py-2.5 rounded-xl flex flex-col gap-0.5">
+  <div className="vision-glass-light px-3 py-2.5 rounded-xl flex flex-col gap-0.5 h-full justify-between">
     <span className="label-meta-sm">{label}</span>
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 mt-1">
       <span className="text-sm font-mono font-bold text-slate-800">{value}</span>
       {!neutral && (
         <span className={`text-xs font-bold ${up ? 'text-rose-500' : 'text-emerald-500'}`}>

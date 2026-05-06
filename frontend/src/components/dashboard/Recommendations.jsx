@@ -19,7 +19,7 @@ const Recommendations = ({ actions = [], riskLevel = 'Low' }) => {
   const UrgIcon = urg.icon;
 
   return (
-    <div className="vision-card p-5 h-full flex flex-col">
+    <div className="vision-card p-5 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2.5">
@@ -41,7 +41,7 @@ const Recommendations = ({ actions = [], riskLevel = 'Low' }) => {
       </div>
 
       {/* Actions */}
-      <div className="space-y-2.5 flex-1">
+      <div className="space-y-2.5">
         {actionList.map((action, i) => (
           <motion.div
             key={i}
