@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, CloudLightning, Users, ThermometerSun, ShieldAlert, Ambulance, Activity, Play, CheckCircle2, ChevronRight, TrendingUp, AlertTriangle, Zap, Clock, FileText } from 'lucide-react';
 import ExecutiveBriefing from './ExecutiveBriefing';
+import { processScenario, getBaselineMetrics } from '../../utils/scenarioEngine';
 
 const PRESETS = [
   { name: 'Baseline', config: { weather: 0, crowd: 0, viral: 0, staffing: 0, traffic: 0 } },
@@ -10,46 +11,6 @@ const PRESETS = [
   { name: 'Viral Outbreak', config: { weather: 1, crowd: 0, viral: 2, staffing: 0, traffic: 0 } },
   { name: 'Staffing Crisis', config: { weather: 0, crowd: 0, viral: 0, staffing: -1, traffic: 0 } },
 ];
-
-const getMetrics = (scenario) => {
-   let osi = 32 + (scenario.weather * 15) + (scenario.viral * 12) + (scenario.crowd * 8) - (scenario.staffing * 10) + (scenario.traffic * 5);
-   let surgeProb = 15 + (scenario.weather * 20) + (scenario.viral * 15) + (scenario.crowd * 10);
-   let delayRisk = 10 + (scenario.weather * 25) + (scenario.traffic * 30) + (scenario.crowd * 5);
-   
-   let icuWindowNum = 24 - (scenario.viral * 6) - (scenario.weather * 3) + (scenario.staffing * 4);
-   let icuWindow = icuWindowNum < 4 ? '< 4h' : icuWindowNum < 8 ? '< 8h' : icuWindowNum < 12 ? '< 12h' : '> 24h';
-
-   return { 
-     osi: Math.min(100, Math.max(0, osi)),
-     surgeProb: Math.min(99, Math.max(0, surgeProb)),
-     delayRisk: Math.min(99, Math.max(0, delayRisk)),
-     icuWindow
-   };
-};
-
-const getTimeline = (scenario) => {
-   let t = [
-     { time: '+2h', text: 'Nominal operations. Capacity stable.', alert: false },
-     { time: '+4h', text: 'Standard ER intake rate.', alert: false },
-     { time: '+6h', text: 'Shift change nominal.', alert: false },
-     { time: '+8h', text: 'End of forecast window.', alert: false },
-   ];
-
-   if (scenario.weather >= 1) {
-     t[0] = { time: '+2h', text: 'Ambulance rerouting initiated due to road flooding.', alert: true };
-     t[2] = { time: '+6h', text: 'Respiratory and trauma intakes peak.', alert: true };
-   }
-   if (scenario.viral >= 1) {
-     t[1] = { time: '+4h', text: 'Triage queue expands with suspected infectious cases.', alert: true };
-   }
-   if (scenario.staffing === -1) {
-     t[3] = { time: '+8h', text: 'Nurse-to-patient ratio hits critical threshold.', alert: true };
-   }
-   if (scenario.crowd >= 1) {
-     t[1] = { time: '+4h', text: 'Localized minor injury clusters arriving from transit hubs.', alert: true };
-   }
-   return t;
-};
 
 const ControlGroup = ({ icon: Icon, title, options, value, onChange, colorClass }) => (
   <div className="mb-6">
@@ -122,9 +83,12 @@ const ScenarioSimulator = ({ baseData }) => {
   const [isSimulating, setIsSimulating] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
 
-  const baselineMetrics = useMemo(() => getMetrics(PRESETS[0].config, true), []);
-  const activeMetrics = useMemo(() => getMetrics(active), [active]);
-  const activeTimeline = useMemo(() => getTimeline(active), [active]);
+  const baselineMetrics = useMemo(() => getBaselineMetrics(), []);
+  
+  // Use Centralized Engine
+  const activeSimulatedData = useMemo(() => processScenario(baseData, active), [baseData, active]);
+  const activeMetrics = activeSimulatedData.metrics;
+  const activeTimeline = activeSimulatedData.timeline;
 
   const hasDraftChanges = JSON.stringify(draft) !== JSON.stringify(active);
 
@@ -355,9 +319,8 @@ const ScenarioSimulator = ({ baseData }) => {
       <AnimatePresence>
         {showBriefing && (
           <ExecutiveBriefing 
-            scenario={active} 
-            metrics={activeMetrics} 
-            timeline={activeTimeline} 
+            scenario={active}
+            simulatedData={activeSimulatedData}
             onClose={() => setShowBriefing(false)} 
           />
         )}

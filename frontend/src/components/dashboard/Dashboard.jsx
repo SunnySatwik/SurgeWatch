@@ -6,6 +6,7 @@ import {
   AlertTriangle, ArrowUpRight, BarChart2, Sparkles
 } from 'lucide-react';
 import { DASHBOARD_DATA } from '../../data/data';
+import { processScenario } from '../../utils/scenarioEngine';
 import ForecastChart from './ForecastChart';
 import KPIOverlay from './KPIOverlay';
 import SHAPPanel from './SHAPPanel';
@@ -30,7 +31,10 @@ const Dashboard = ({ onBack }) => {
   const [mode, setMode] = useState('insights'); // 'insights' | 'simulator'
   const containerRef = useRef(null);
 
-  const baseData = DASHBOARD_DATA?.[selectedDayIndex] ?? DASHBOARD_DATA?.[0] ?? {};
+  const baseData = useMemo(() => {
+    const raw = DASHBOARD_DATA?.[selectedDayIndex] ?? DASHBOARD_DATA?.[0] ?? {};
+    return processScenario(raw, { weather: 0, crowd: 0, viral: 0, staffing: 0, traffic: 0 });
+  }, [selectedDayIndex]);
   
   const risk = riskConfig[baseData?.risk] ?? riskConfig.Low;
 
@@ -185,7 +189,7 @@ const Dashboard = ({ onBack }) => {
 
         {/* ── Grid Content ── */}
         {mode === 'simulator' ? (
-          <ScenarioSimulator baseData={baseData} />
+          <ScenarioSimulator baseData={baseData} allData={DASHBOARD_DATA} selectedDayIndex={selectedDayIndex} />
         ) : (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start auto-rows-min min-w-0 pb-20">
             {/* LEFT COLUMN: Forecast, Recommendations, Departments */}

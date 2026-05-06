@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Play, FileText, Activity, AlertTriangle, ArrowRight, ShieldAlert, HeartPulse, Shield, BarChart3, Square } from 'lucide-react';
+import { generateBriefingData } from '../../utils/scenarioEngine';
 
 const MODES = [
   { id: 'executive', label: 'Executive', icon: BarChart3 },
@@ -17,64 +18,12 @@ const PROCESSING_STEPS = [
   "Synthesizing operational directives..."
 ];
 
-const generateBriefingData = (scenario, metrics, timeline, mode) => {
-  let isSevere = scenario.weather >= 1 || scenario.viral >= 1 || scenario.staffing === -1;
-  let severity = isSevere ? 'High' : 'Nominal';
-
-  let summary = "";
-  if (mode === 'executive') {
-    summary = `Hospital capacity is projected to ${isSevere ? 'experience severe strain' : 'remain stable'} over the next 12 hours. Operational Stress Index sits at ${metrics.osi}, with an ambulance delay risk of ${metrics.delayRisk}%. Resource allocation must prioritize ${scenario.viral >= 1 ? 'respiratory and isolation units' : 'standard trauma intake'}.`;
-  } else if (mode === 'clinical') {
-    summary = `Clinical demand will ${isSevere ? 'spike sharply' : 'follow standard diurnal patterns'}. Anticipated surge probability is ${metrics.surgeProb}%. Adjust staffing ratios to accommodate ${scenario.weather >= 1 ? 'trauma and exposure' : 'routine'} presentations.`;
-  } else if (mode === 'emergency') {
-    summary = `Emergency operations are at ${severity} readiness. Delay risk for incoming transit is ${metrics.delayRisk}%. Expected critical intake window requires immediate triage protocol alignment.`;
-  } else {
-    summary = `Public health indicators reflect a ${severity.toLowerCase()} risk profile. Community transmission and environmental factors correlate to a ${metrics.surgeProb}% regional surge likelihood.`;
-  }
-
-  let risks = [];
-  if (scenario.weather === 2) risks.push("Severe weather disrupting ambulance routing and increasing trauma cases.");
-  if (scenario.weather === 1) risks.push("Sustained rainfall causing localized transit delays for staff.");
-  if (scenario.viral === 2) risks.push("Viral outbreak accelerating airborne isolation bed exhaustion.");
-  if (scenario.viral === 1) risks.push("Elevated viral transmission increasing ER waiting room congestion.");
-  if (scenario.staffing === -1) risks.push("Critical nursing shortage compounding bed turnover delays.");
-  if (scenario.traffic === 1) risks.push("Gridlock conditions threatening golden-hour trauma windows.");
-  if (scenario.crowd === 2) risks.push("Mass gathering incidents elevating localized mass-casualty risk.");
-  if (risks.length === 0) risks.push("No critical operational anomalies detected in current parameters.");
-
-  let actions = [];
-  if (mode === 'executive') {
-    if (scenario.staffing === -1) actions.push("Authorize emergency overtime pay immediately.");
-    if (scenario.viral >= 1) actions.push("Approve emergency procurement of PPE and respiratory support.");
-    actions.push("Review 12-hour predictive financial run-rate.");
-  } else if (mode === 'clinical') {
-    if (scenario.viral >= 1) actions.push("Convert auxiliary wards to negative pressure isolation.");
-    if (scenario.weather >= 1) actions.push("Prepare trauma bays for weather-related multi-casualty events.");
-    actions.push("Accelerate discharge protocols for stable patients.");
-  } else if (mode === 'emergency') {
-    if (scenario.traffic === 1) actions.push("Coordinate with regional dispatch for dynamic ambulance rerouting.");
-    actions.push("Activate Incident Command Center.");
-    actions.push("Stage rapid-triage tents at secondary entrances.");
-  } else {
-    actions.push("Issue community advisories regarding ER wait times.");
-    actions.push("Coordinate syndromic surveillance data with regional authorities.");
-  }
-
-  // Ensure actions are max 3
-  actions = actions.slice(0, 3);
-
-  let outlook = `Projections indicate ${metrics.icuWindow} until ICU saturation under current parameters. Expected patient flow will necessitate ${scenario.staffing === 1 ? 'maintaining current surge staffing' : 'rapid resource reallocation'} to prevent boarding delays.`;
-
-  return { summary, risks, actions, outlook, timeline };
-};
-
-const ExecutiveBriefing = ({ scenario, metrics, timeline, onClose }) => {
+const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
   const [activeMode, setActiveMode] = useState('executive');
   const [processing, setProcessing] = useState(true);
   const [stepIndex, setStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Auto-advance processing steps
   useEffect(() => {
     if (!processing) return;
     const interval = setInterval(() => {
@@ -90,9 +39,8 @@ const ExecutiveBriefing = ({ scenario, metrics, timeline, onClose }) => {
     return () => clearInterval(interval);
   }, [processing]);
 
-  const briefing = React.useMemo(() => generateBriefingData(scenario, metrics, timeline, activeMode), [scenario, metrics, timeline, activeMode]);
+  const briefing = React.useMemo(() => generateBriefingData(simulatedData, scenario, activeMode), [simulatedData, scenario, activeMode]);
 
-  // Voice playback
   const handlePlay = () => {
     if (!('speechSynthesis' in window)) return;
     
@@ -116,7 +64,6 @@ const ExecutiveBriefing = ({ scenario, metrics, timeline, onClose }) => {
     utterance.rate = 0.95;
     utterance.pitch = 0.9;
     
-    // Try to find a good English voice
     const voices = window.speechSynthesis.getVoices();
     const preferredVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Premium') || v.name.includes('Natural')));
     if (preferredVoice) utterance.voice = preferredVoice;
