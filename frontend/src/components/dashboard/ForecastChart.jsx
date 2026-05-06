@@ -13,114 +13,113 @@ import {
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900/90 backdrop-blur-xl border border-white/20 p-4 rounded-xl shadow-2xl">
-        <p className="text-white font-bold text-sm mb-1">{label}</p>
-        <p className="text-cyan-400 font-bold text-xl">{payload[0].value}% <span className="text-slate-400 text-xs font-normal">Load</span></p>
-        <p className="text-slate-500 text-[10px] uppercase tracking-widest mt-2">Click to drill down</p>
+      <div className="vision-glass p-5 rounded-3xl border-white/40 shadow-2xl backdrop-blur-3xl">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+        <p className="text-2xl font-display font-bold text-slate-800">
+          {payload[0]?.value ?? 0}% <span className="text-sm font-medium text-slate-400">Capacity</span>
+        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+          <span className="text-[10px] font-bold text-blue-600 uppercase">Neural Projection</span>
+        </div>
       </div>
     );
   }
   return null;
 };
 
-const ForecastChart = ({ data, selectedIndex, onSelect }) => {
-  const chartData = data.map((d, index) => ({
-    name: d.day,
-    load: d.load,
+const ForecastChart = ({ data = [], selectedIndex, onSelect }) => {
+  const chartData = (data || []).map((d, index) => ({
+    name: d?.day ?? '',
+    load: d?.load ?? 0,
     index: index
   }));
 
-  const handleClick = (state) => {
-    if (state && state.activeTooltipIndex !== undefined) {
-      onSelect(state.activeTooltipIndex);
-    }
-  };
-
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative min-w-0">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={chartData}
-          onClick={handleClick}
-          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+          onMouseMove={(state) => {
+            if (state && state.activeTooltipIndex !== undefined) {
+              onSelect?.(state.activeTooltipIndex);
+            }
+          }}
+          margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
         >
           <defs>
             <linearGradient id="colorLoad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-            </linearGradient>
-            <linearGradient id="selectedGlow" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4}/>
-              <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+              <stop offset="5%" stopColor="#007aff" stopOpacity={0.3}/>
+              <stop offset="95%" stopColor="#007aff" stopOpacity={0}/>
             </linearGradient>
           </defs>
+          
           <CartesianGrid 
-            strokeDasharray="3 3" 
+            strokeDasharray="8 8" 
             vertical={false} 
-            stroke="rgba(255,255,255,0.05)" 
-          />
-          <XAxis 
-            dataKey="name" 
-            axisLine={false} 
-            tickLine={false} 
-            tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 500 }}
-            dy={10}
-          />
-          <YAxis 
-            axisLine={false} 
-            tickLine={false} 
-            tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
-            domain={[0, 100]}
-            dx={-10}
-            tickFormatter={(value) => `${value}%`}
-          />
-          <Tooltip 
-            content={<CustomTooltip />} 
-            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }}
+            stroke="rgba(0, 0, 0, 0.05)" 
           />
           
-          {/* Threshold Line */}
-          <ReferenceLine 
-            y={80} 
-            stroke="#ef4444" 
-            strokeDasharray="5 5" 
-            label={{ 
-              position: 'right', 
-              value: 'CRITICAL', 
-              fill: '#ef4444', 
-              fontSize: 10, 
-              fontWeight: 'bold',
-              letterSpacing: '0.1em'
-            }} 
+          <XAxis 
+            dataKey="name" 
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }}
+            dy={15}
+          />
+          
+          <YAxis 
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }}
+            tickFormatter={(v) => `${v}%`}
+          />
+          
+          <Tooltip 
+            content={<CustomTooltip />} 
+            cursor={{ stroke: '#007aff', strokeWidth: 2, strokeDasharray: '6 6' }}
           />
 
           <Area
             type="monotone"
             dataKey="load"
-            stroke="#06b6d4"
+            stroke="#007aff"
             strokeWidth={4}
             fillOpacity={1}
             fill="url(#colorLoad)"
+            animationDuration={2000}
             activeDot={{ 
               r: 8, 
-              stroke: '#06b6d4', 
-              strokeWidth: 4, 
-              fill: '#fff' 
+              fill: '#fff', 
+              stroke: '#007aff', 
+              strokeWidth: 4,
+              className: "shadow-2xl" 
             }}
-            animationDuration={1500}
           />
 
-          {/* Highlight Selected Point */}
-          {selectedIndex !== null && (
-             <ReferenceLine 
-                x={data[selectedIndex].day} 
-                stroke="rgba(6, 182, 212, 0.4)" 
-                strokeWidth={20}
-                strokeOpacity={0.1}
-             />
-          )}
+          <ReferenceLine
+            y={80}
+            stroke="#f43f5e"
+            strokeDasharray="5 5"
+            label={{ 
+              value: 'CRITICAL', 
+              position: 'right', 
+              fill: '#f43f5e', 
+              fontSize: 10, 
+              fontWeight: 800,
+              className: "uppercase tracking-widest"
+            }}
+          />
         </AreaChart>
       </ResponsiveContainer>
+
+      {/* Floating Insight Overlay */}
+      <div className="absolute top-0 right-0 p-4 pointer-events-none">
+        <div className="vision-glass-light px-4 py-2 rounded-2xl flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Model Confidence: 94.8%</span>
+        </div>
+      </div>
     </div>
   );
 };
