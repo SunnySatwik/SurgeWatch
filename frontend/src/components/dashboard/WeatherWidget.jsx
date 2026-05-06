@@ -9,21 +9,21 @@ import {
 
 /* ─── Weather code → condition mapping (WMO codes) ──────────────── */
 const WMO_MAP = {
-  0:  { label: 'Clear Sky',        icon: Sun,           gradient: 'from-amber-50 to-orange-50',   textColor: 'text-amber-600' },
-  1:  { label: 'Mainly Clear',     icon: Sun,           gradient: 'from-amber-50 to-yellow-50',   textColor: 'text-amber-500' },
-  2:  { label: 'Partly Cloudy',    icon: Cloud,         gradient: 'from-slate-50 to-blue-50',     textColor: 'text-blue-500' },
-  3:  { label: 'Overcast',         icon: Cloud,         gradient: 'from-slate-100 to-slate-200',  textColor: 'text-slate-500' },
-  45: { label: 'Foggy',            icon: Cloud,         gradient: 'from-slate-100 to-zinc-50',    textColor: 'text-slate-400' },
-  48: { label: 'Icy Fog',          icon: CloudSnow,     gradient: 'from-blue-50 to-slate-100',    textColor: 'text-blue-400' },
-  51: { label: 'Light Drizzle',    icon: CloudRain,     gradient: 'from-blue-50 to-indigo-50',    textColor: 'text-blue-500' },
-  53: { label: 'Moderate Drizzle', icon: CloudRain,     gradient: 'from-blue-100 to-indigo-100',  textColor: 'text-blue-600' },
-  55: { label: 'Heavy Drizzle',    icon: CloudRain,     gradient: 'from-indigo-100 to-blue-200',  textColor: 'text-indigo-600' },
-  61: { label: 'Light Rain',       icon: CloudRain,     gradient: 'from-blue-100 to-indigo-50',   textColor: 'text-blue-600' },
-  63: { label: 'Moderate Rain',    icon: CloudRain,     gradient: 'from-indigo-100 to-blue-100',  textColor: 'text-indigo-600' },
-  65: { label: 'Heavy Rain',       icon: CloudRain,     gradient: 'from-indigo-200 to-blue-200',  textColor: 'text-indigo-700' },
-  71: { label: 'Light Snow',       icon: CloudSnow,     gradient: 'from-sky-50 to-blue-50',       textColor: 'text-sky-500' },
-  80: { label: 'Rain Showers',     icon: CloudRain,     gradient: 'from-blue-100 to-violet-100',  textColor: 'text-blue-600' },
-  95: { label: 'Thunderstorm',     icon: CloudLightning,gradient: 'from-violet-100 to-indigo-200',textColor: 'text-violet-700' },
+  0: { label: 'Clear Sky', icon: Sun, gradient: 'from-amber-50 to-orange-50', textColor: 'text-amber-600' },
+  1: { label: 'Mainly Clear', icon: Sun, gradient: 'from-amber-50 to-yellow-50', textColor: 'text-amber-500' },
+  2: { label: 'Partly Cloudy', icon: Cloud, gradient: 'from-slate-50 to-blue-50', textColor: 'text-blue-500' },
+  3: { label: 'Overcast', icon: Cloud, gradient: 'from-slate-100 to-slate-200', textColor: 'text-slate-500' },
+  45: { label: 'Foggy', icon: Cloud, gradient: 'from-slate-100 to-zinc-50', textColor: 'text-slate-400' },
+  48: { label: 'Icy Fog', icon: CloudSnow, gradient: 'from-blue-50 to-slate-100', textColor: 'text-blue-400' },
+  51: { label: 'Light Drizzle', icon: CloudRain, gradient: 'from-blue-50 to-indigo-50', textColor: 'text-blue-500' },
+  53: { label: 'Moderate Drizzle', icon: CloudRain, gradient: 'from-blue-100 to-indigo-100', textColor: 'text-blue-600' },
+  55: { label: 'Heavy Drizzle', icon: CloudRain, gradient: 'from-indigo-100 to-blue-200', textColor: 'text-indigo-600' },
+  61: { label: 'Light Rain', icon: CloudRain, gradient: 'from-blue-100 to-indigo-50', textColor: 'text-blue-600' },
+  63: { label: 'Moderate Rain', icon: CloudRain, gradient: 'from-indigo-100 to-blue-100', textColor: 'text-indigo-600' },
+  65: { label: 'Heavy Rain', icon: CloudRain, gradient: 'from-indigo-200 to-blue-200', textColor: 'text-indigo-700' },
+  71: { label: 'Light Snow', icon: CloudSnow, gradient: 'from-sky-50 to-blue-50', textColor: 'text-sky-500' },
+  80: { label: 'Rain Showers', icon: CloudRain, gradient: 'from-blue-100 to-violet-100', textColor: 'text-blue-600' },
+  95: { label: 'Thunderstorm', icon: CloudLightning, gradient: 'from-violet-100 to-indigo-200', textColor: 'text-violet-700' },
 };
 
 const getCondition = (code) => WMO_MAP[code] ?? WMO_MAP[2];
@@ -35,13 +35,13 @@ const getSurgeImpact = (weather) => {
   const code = weather.current.weather_code;
 
   if (precipProb > 60 || code === 63 || code === 65 || code === 80 || code === 95) {
-      return { level: 'critical', label: 'Severe weather event. Mobilize trauma and ER capacities.', title: 'Critical Operations Alert', color: 'text-rose-600',    glow: 'shadow-[inset_4px_0_0_0_#e11d48]', bg: 'bg-rose-50/80 border-rose-200',       dot: 'bg-rose-500',    surge: '+15–25%' };
+    return { level: 'critical', label: 'Severe weather event. Mobilize trauma and ER capacities.', title: 'Critical Operations Alert', color: 'text-rose-600', glow: 'shadow-[inset_4px_0_0_0_#e11d48]', bg: 'bg-rose-50/80 border-rose-200', dot: 'bg-rose-500', surge: '+15–25%' };
   }
   if (humidity > 75 && (code === 51 || code === 53 || code === 55 || code === 45 || code === 48)) {
-      return { level: 'high', label: 'High correlation with respiratory admissions and slower ambulance turnaround.', title: 'High Surge Probability', color: 'text-orange-600',  glow: 'shadow-[inset_4px_0_0_0_#f97316]', bg: 'bg-orange-50/80 border-orange-200',   dot: 'bg-orange-500',  surge: '+8–15%' };
+    return { level: 'high', label: 'High correlation with respiratory admissions and slower ambulance turnaround.', title: 'High Surge Probability', color: 'text-orange-600', glow: 'shadow-[inset_4px_0_0_0_#f97316]', bg: 'bg-orange-50/80 border-orange-200', dot: 'bg-orange-500', surge: '+8–15%' };
   }
   if (temp > 35 || temp < 15 || precipProb > 30) {
-      return { level: 'moderate', label: 'Mild correlation with incoming ER visits and minor resource strain.', title: 'Elevated Operational Monitor', color: 'text-amber-600',   glow: 'shadow-[inset_4px_0_0_0_#f59e0b]', bg: 'bg-amber-50/80 border-amber-200',     dot: 'bg-amber-500',   surge: '+3–8%' };
+    return { level: 'moderate', label: 'Mild correlation with incoming ER visits and minor resource strain.', title: 'Elevated Operational Monitor', color: 'text-amber-600', glow: 'shadow-[inset_4px_0_0_0_#f59e0b]', bg: 'bg-amber-50/80 border-amber-200', dot: 'bg-amber-500', surge: '+3–8%' };
   }
   return { level: 'low', label: 'Stable conditions. No weather-driven surges expected.', title: 'Nominal Operational Impact', color: 'text-emerald-600', glow: 'shadow-[inset_4px_0_0_0_#10b981]', bg: 'bg-emerald-50/80 border-emerald-200', dot: 'bg-emerald-500', surge: '+0–2%' };
 };
@@ -54,7 +54,7 @@ const generateInsights = (weather, city) => {
   const code = weather.current.weather_code;
 
   const isBlr = city?.toLowerCase().includes('bengaluru') || city?.toLowerCase().includes('bangalore');
-  
+
   const insights = [];
 
   if (humidity > 75 && (code === 51 || code === 53 || code === 55 || code === 45 || code === 48)) {
@@ -74,28 +74,36 @@ const generateInsights = (weather, city) => {
   if (insights.length === 0 && temp >= 20 && temp <= 32 && humidity < 70 && precipProb < 20) {
     insights.push("Weather stable and dry: Reduced volatility. Lower respiratory uncertainty, leading to a stable operational outlook.");
   }
-  
+
   if (wind > 25 && insights.length < 3) {
-      insights.push("Elevated wind speeds: Potential increase in airborne allergens. Monitor for mild spikes in allergic rhinitis or asthma cases.");
+    insights.push("Elevated wind speeds: Potential increase in airborne allergens. Monitor for mild spikes in allergic rhinitis or asthma cases.");
   }
 
   if (insights.length === 0) {
-      insights.push("Conditions nominal: Operating within standard parameters. No major weather-driven anomalies projected for the next 12 hours.");
+    insights.push("Conditions nominal: Operating within standard parameters. No major weather-driven anomalies projected for the next 12 hours.");
   }
 
   return insights.slice(0, 3);
 };
 
 /* ─── Location & Storage Helpers ─────────────────────────────────── */
+
 const STORAGE_KEY = 'surgewatch_weather_loc';
-const DEFAULT_LOC = { city: 'Bengaluru', state: 'Karnataka', country: 'IN', lat: 12.9716, lon: 77.5946 };
+
+const DEFAULT_LOC = {
+  city: 'Bengaluru',
+  state: 'Karnataka',
+  country: 'IN',
+  lat: 12.9716,
+  lon: 77.5946
+};
 
 const getSavedLocation = () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) return JSON.parse(saved);
   } catch (e) {
-    console.error("Could not parse saved location");
+    console.error('Could not parse saved location');
   }
   return null;
 };
@@ -104,45 +112,99 @@ const saveLocation = (loc) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(loc));
   } catch (e) {
-    console.error("Could not save location");
+    console.error('Could not save location');
   }
 };
 
 const fetchLocation = async () => {
   const saved = getSavedLocation();
   if (saved) return saved;
-  // Intelligently default to Bengaluru instead of random IP
+
   return DEFAULT_LOC;
 };
 
-const fetchCurrentIPLocation = async () => {
-  const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
-  const d = await res.json();
-  if (!d.latitude) throw new Error('Could not resolve IP location');
-  return { city: d.city || 'Unknown', state: d.region, country: d.country_code, lat: d.latitude, lon: d.longitude };
-};
+/* ─── Backend API Helpers ───────────────────────────────────────── */
 
 const geocode = async (city) => {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=5&language=en&format=json`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-  const d = await res.json();
-  if (!d.results?.length) throw new Error('City not found');
-  
-  // Prioritize exact match if available
-  const exact = d.results.find(r => r.name.toLowerCase() === city.toLowerCase());
-  const r = exact || d.results[0];
+  const res = await fetch(`/api/geocode/search?q=${encodeURIComponent(city)}`);
 
-  return { city: r.name, state: r.admin1, country: r.country_code, lat: r.latitude, lon: r.longitude };
+  if (!res.ok) {
+    throw new Error('City search failed');
+  }
+
+  const payload = await res.json();
+
+  if (!payload.success || !payload.data) {
+    throw new Error('City not found');
+  }
+
+  return payload.data;
+};
+
+const reverseGeocode = async (lat, lon) => {
+  const res = await fetch(`/api/geocode/reverse?lat=${lat}&lon=${lon}`);
+
+  if (!res.ok) {
+    throw new Error('Reverse geocode failed');
+  }
+
+  const payload = await res.json();
+
+  if (!payload.success || !payload.data) {
+    throw new Error('Could not resolve location');
+  }
+
+  return payload.data;
 };
 
 const fetchWeather = async (lat, lon) => {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,wind_speed_10m,weather_code` +
-    `&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weather_code` +
-    `&timezone=auto&forecast_days=1`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-  if (!res.ok) throw new Error('Weather API error');
-  return res.json();
+  const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+
+  if (!res.ok) {
+    throw new Error('Weather fetch failed');
+  }
+
+  const payload = await res.json();
+
+  if (!payload.success || !payload.data) {
+    throw new Error('Invalid weather response');
+  }
+
+  return payload.data;
+};
+
+const fetchCurrentBrowserLocation = () => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation not supported'));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          const location = await reverseGeocode(lat, lon);
+
+          resolve({
+            ...location,
+            lat,
+            lon
+          });
+        } catch (err) {
+          reject(err);
+        }
+      },
+      (err) => reject(err),
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000
+      }
+    );
+  });
 };
 
 /* ─── Compact header chip (always visible) ───────────────────────── */
@@ -185,9 +247,9 @@ const WeatherChip = ({ weather, location, loading, errorState, onClick }) => {
         </div>
       </div>
       {loading ? (
-         <RefreshCw size={12} className="text-slate-400 animate-spin ml-2" />
+        <RefreshCw size={12} className="text-slate-400 animate-spin ml-2" />
       ) : (
-         <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-600 transition-colors ml-2" />
+        <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-600 transition-colors ml-2" />
       )}
     </button>
   );
@@ -205,63 +267,64 @@ const HourlyBars = ({ hourly, field, isPrecip, unit }) => {
 
   const points = hours.map((h, i) => {
     const x = (i * 12.5) + 6.25;
-    const y = 90 - ((h.value / peak) * 80); 
+    const y = 90 - ((h.value / peak) * 80);
     return `${x},${y}`;
   }).join(' ');
 
   return (
     <div className="relative h-28 pt-4 pb-2 flex items-end w-full">
       <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" preserveAspectRatio="none" viewBox="0 0 100 100">
-         <defs>
-           <linearGradient id={`grad-${field}`} x1="0" y1="0" x2="0" y2="1">
-             <stop offset="0%" stopColor={isPrecip ? "#818cf8" : "#60a5fa"} stopOpacity="0.25" />
-             <stop offset="100%" stopColor={isPrecip ? "#818cf8" : "#60a5fa"} stopOpacity="0" />
-           </linearGradient>
-         </defs>
-         <motion.polyline 
-           initial={{ pathLength: 0, opacity: 0 }}
-           animate={{ pathLength: 1, opacity: 0.5 }}
-           transition={{ duration: 1.2, ease: "easeInOut" }}
-           points={points} 
-           fill="none" 
-           stroke={isPrecip ? "#6366f1" : "#3b82f6"} 
-           strokeWidth="2" 
-           vectorEffect="non-scaling-stroke"
-         />
-         <motion.polygon 
-           initial={{ opacity: 0 }}
-           animate={{ opacity: 1 }}
-           transition={{ delay: 0.5, duration: 1 }}
-           points={`${points} 100,100 0,100`} 
-           fill={`url(#grad-${field})`} 
-         />
+        <defs>
+          <linearGradient id={`grad-${field}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={isPrecip ? "#818cf8" : "#60a5fa"} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={isPrecip ? "#818cf8" : "#60a5fa"} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <motion.polyline
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 0.5 }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
+          points={points}
+          fill="none"
+          stroke={isPrecip ? "#6366f1" : "#3b82f6"}
+          strokeWidth="2"
+          vectorEffect="non-scaling-stroke"
+        />
+        <motion.polygon
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 1 }}
+          points={`${points} 100,100 0,100`}
+          fill={`url(#grad-${field})`}
+        />
       </svg>
       {hours.map((h, i) => {
-        const heightPx = (h.value / peak) * 64; 
+        const heightPx = (h.value / peak) * 64;
         return (
-        <div key={i} className="flex flex-col items-center gap-1.5 flex-1 z-10 relative group">
-          <motion.span 
-             initial={{ opacity: 0, y: 5 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: i * 0.1 }}
-             className={`text-[10px] font-mono font-bold ${isPrecip ? 'text-indigo-600' : 'text-blue-600'} opacity-80 group-hover:opacity-100 transition-opacity`}
-          >
-            {Math.round(h.value)}{unit}
-          </motion.span>
-          <div className="w-full flex justify-center items-end" style={{ height: '64px' }}>
-             <motion.div
-               initial={{ height: 0 }}
-               animate={{ height: `${heightPx}px` }}
-               transition={{ delay: i * 0.05, duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }}
-               className={`w-full max-w-[20px] rounded-t-md ${isPrecip ? 'bg-gradient-to-t from-indigo-200/40 to-indigo-400/60 border-indigo-300/50' : 'bg-gradient-to-t from-blue-200/40 to-blue-400/60 border-blue-300/50'} backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] border-t border-l border-r glass-reflection group-hover:brightness-110 transition-all`}
-               style={{ minHeight: '4px' }}
-             />
+          <div key={i} className="flex flex-col items-center gap-1.5 flex-1 z-10 relative group">
+            <motion.span
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className={`text-[10px] font-mono font-bold ${isPrecip ? 'text-indigo-600' : 'text-blue-600'} opacity-80 group-hover:opacity-100 transition-opacity`}
+            >
+              {Math.round(h.value)}{unit}
+            </motion.span>
+            <div className="w-full flex justify-center items-end" style={{ height: '64px' }}>
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: `${heightPx}px` }}
+                transition={{ delay: i * 0.05, duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }}
+                className={`w-full max-w-[20px] rounded-t-md ${isPrecip ? 'bg-gradient-to-t from-indigo-200/40 to-indigo-400/60 border-indigo-300/50' : 'bg-gradient-to-t from-blue-200/40 to-blue-400/60 border-blue-300/50'} backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] border-t border-l border-r glass-reflection group-hover:brightness-110 transition-all`}
+                style={{ minHeight: '4px' }}
+              />
+            </div>
+            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+              {h.hour === 0 ? '12A' : h.hour < 12 ? `${h.hour}A` : h.hour === 12 ? '12P' : `${h.hour - 12}P`}
+            </span>
           </div>
-          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-            {h.hour === 0 ? '12A' : h.hour < 12 ? `${h.hour}A` : h.hour === 12 ? '12P' : `${h.hour - 12}P`}
-          </span>
-        </div>
-      )})}
+        )
+      })}
     </div>
   );
 };
@@ -367,7 +430,7 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
         <div className={`bg-gradient-to-br ${cond.gradient} px-8 pt-8 pb-8 relative overflow-hidden transition-all duration-700`}>
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/50 blur-[60px] rounded-full translate-x-1/4 -translate-y-1/4 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/40 blur-[50px] rounded-full -translate-x-1/4 translate-y-1/4 pointer-events-none" />
-          
+
           <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
             <button
               onClick={handleAutoLocate}
@@ -403,7 +466,7 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
                 </div>
               </div>
             </div>
-            
+
             <div className="relative pr-2">
               <Icon size={96} className={`${cond.textColor} drop-shadow-lg opacity-90`} strokeWidth={1.2} />
               <div className="absolute inset-0 blur-2xl opacity-30 bg-current rounded-full" />
@@ -413,10 +476,10 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
           {/* Conditions strip */}
           <div className="relative z-10 flex flex-wrap items-center gap-4 mt-8 p-4 rounded-2xl vision-glass-light border border-white/60 shadow-sm">
             {[
-              { icon: Droplets,    label: 'Humidity',  value: `${humidity}%` },
-              { icon: Wind,        label: 'Wind',       value: `${windSpeed} km/h` },
-              { icon: CloudRain,   label: 'Rain Prob.', value: `${precipProb}%` },
-              { icon: Thermometer, label: 'Apparent',   value: `${feelsLike}°C` },
+              { icon: Droplets, label: 'Humidity', value: `${humidity}%` },
+              { icon: Wind, label: 'Wind', value: `${windSpeed} km/h` },
+              { icon: CloudRain, label: 'Rain Prob.', value: `${precipProb}%` },
+              { icon: Thermometer, label: 'Apparent', value: `${feelsLike}°C` },
             ].map(({ icon: I, label, value }) => (
               <div key={label} className="flex items-center gap-3 flex-1 min-w-[120px]">
                 <div className="p-2.5 rounded-xl bg-white/60 text-slate-600 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
@@ -438,7 +501,7 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
           <div className={`relative p-5 rounded-2xl border ${impact.bg} overflow-hidden ${impact.glow} flex items-center gap-5 transition-all hover:shadow-md`}>
             {/* Ambient glow effect inside the card */}
             <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full blur-3xl opacity-30 ${impact.dot}`} />
-            
+
             <div className="relative z-10 flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <div className={`w-2.5 h-2.5 rounded-full ${impact.dot} shadow-[0_0_8px_currentColor] animate-pulse`} />
@@ -448,8 +511,8 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
               <p className={`text-sm font-medium ${impact.color} opacity-90`}>{impact.label}</p>
             </div>
             <div className="relative z-10 text-right shrink-0 flex flex-col items-end justify-center pl-4 border-l border-slate-200/50">
-               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Projected ER Load</span>
-               <span className={`text-3xl font-mono font-bold ${impact.color} tracking-tighter`}>{impact.surge}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Projected ER Load</span>
+              <span className={`text-3xl font-mono font-bold ${impact.color} tracking-tighter`}>{impact.surge}</span>
             </div>
           </div>
 
@@ -575,7 +638,7 @@ const WeatherWidget = () => {
   const handleAutoLocate = async () => {
     setLoading(true);
     try {
-      const newLoc = await fetchCurrentIPLocation();
+      const newLoc = await fetchCurrentBrowserLocation();
       await loadWeatherForLocation(newLoc);
     } catch (err) {
       setLoading(false);

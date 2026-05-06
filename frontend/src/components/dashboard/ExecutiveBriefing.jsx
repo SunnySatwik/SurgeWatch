@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Play, FileText, Activity, AlertTriangle, ArrowRight, ShieldAlert, HeartPulse, Shield, BarChart3, Square } from 'lucide-react';
+import { X, Play, FileText, Activity, AlertTriangle, ArrowRight, ShieldAlert, HeartPulse, Shield, BarChart3, Square, Target, ChevronUp, ChevronDown } from 'lucide-react';
 import { generateBriefingData } from '../../utils/scenarioEngine';
 
 const MODES = [
@@ -18,11 +18,36 @@ const PROCESSING_STEPS = [
   "Synthesizing operational directives..."
 ];
 
+const EscalationBadge = ({ level }) => {
+  let colors = "bg-slate-100 text-slate-600 border-slate-200";
+  if (level === "Regional Emergency Coordination") colors = "bg-rose-100 text-rose-700 border-rose-200 animate-pulse";
+  else if (level === "Critical Incident Mode") colors = "bg-orange-100 text-orange-700 border-orange-200";
+  else if (level === "Surge Protocol") colors = "bg-amber-100 text-amber-700 border-amber-200";
+  else if (level === "Elevated Monitoring") colors = "bg-blue-100 text-blue-700 border-blue-200";
+  else colors = "bg-emerald-100 text-emerald-700 border-emerald-200";
+
+  return (
+    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${colors}`}>
+      {level}
+    </div>
+  );
+};
+
 const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
   const [activeMode, setActiveMode] = useState('executive');
   const [processing, setProcessing] = useState(true);
   const [stepIndex, setStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    // Prevent background scrolling while modal is active
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    };
+  }, []);
 
   useEffect(() => {
     if (!processing) return;
@@ -54,9 +79,10 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
     
     const textToSpeak = `
       Executive Briefing. Mode: ${MODES.find(m => m.id === activeMode)?.label}.
+      Escalation Level: ${briefing.escalation}.
       Summary. ${briefing.summary}
       Key Operational Risks. ${briefing.risks.join('. ')}
-      Forecast Outlook. ${briefing.outlook}
+      Confidence Reasoning. ${briefing.outlook}
       Recommended Actions. ${briefing.actions.join('. ')}
     `;
 
@@ -75,11 +101,14 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
     window.speechSynthesis.speak(utterance);
   };
 
-  useEffect(() => {
-    return () => {
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    };
-  }, []);
+  const scroll = (direction) => {
+    if (!scrollRef.current) return;
+    const scrollAmount = 350;
+    scrollRef.current.scrollBy({
+      top: direction === 'down' ? scrollAmount : -scrollAmount,
+      behavior: 'smooth'
+    });
+  };
 
   return ReactDOM.createPortal(
     <motion.div
@@ -95,21 +124,51 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
         animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.95, y: 20, opacity: 0 }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="relative w-full max-w-4xl bg-white/90 backdrop-blur-2xl rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.2)] border border-white/50 overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-5xl bg-white/90 backdrop-blur-2xl rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.2)] border border-white/50 overflow-hidden flex flex-col max-h-[90vh]"
       >
+        <style>
+          {`
+            .briefing-scroll::-webkit-scrollbar { width: 8px; }
+            .briefing-scroll::-webkit-scrollbar-track { background: transparent; }
+            .briefing-scroll::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.1); border-radius: 10px; }
+            .briefing-scroll::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.2); }
+          `}
+        </style>
+
         {/* Header */}
         <div className="px-8 py-6 border-b border-slate-200/50 flex items-center justify-between shrink-0 bg-white/50">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-md">
               <FileText size={18} className="text-white" />
             </div>
             <div>
               <h2 className="text-lg font-display font-bold text-slate-800 tracking-tight">AI Executive Briefing</h2>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Automated Intelligence Report</p>
+              <div className="flex items-center gap-3 mt-1">
+                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Intelligence Report</p>
+                 {!processing && <EscalationBadge level={briefing.escalation} />}
+              </div>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
+            {!processing && (
+              <div className="flex items-center gap-2 mr-2">
+                <button 
+                  onClick={() => scroll('up')}
+                  className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-all shadow-sm"
+                  title="Scroll Up"
+                >
+                  <ChevronUp size={16} />
+                </button>
+                <button 
+                  onClick={() => scroll('down')}
+                  className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-all shadow-sm"
+                  title="Scroll Down"
+                >
+                  <ChevronDown size={16} />
+                </button>
+              </div>
+            )}
             {!processing && (
               <button 
                 onClick={handlePlay}
@@ -187,10 +246,21 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                       </button>
                     );
                   })}
+                  
+                  <div className="mt-auto pt-6 border-t border-slate-200/50">
+                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">Primary Threat</p>
+                     <div className="flex items-start gap-2 px-2">
+                        <Target size={14} className="text-rose-500 mt-0.5 shrink-0" />
+                        <span className="text-xs font-bold text-slate-700 leading-snug">{briefing.primaryThreat}</span>
+                     </div>
+                  </div>
                 </div>
 
-                {/* Briefing Document */}
-                <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
+                {/* Briefing Document - ADDED overscroll-contain and scrollbar styling */}
+                <div 
+                  ref={scrollRef}
+                  className="flex-1 overflow-y-auto p-8 space-y-8 scroll-smooth briefing-scroll overscroll-contain"
+                >
                   
                   {/* Summary */}
                   <section>
@@ -206,17 +276,27 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Risks */}
                     <section>
-                      <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 mb-4">Key Operational Risks</h3>
+                      <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 mb-4">Threat Prioritization</h3>
                       <ul className="space-y-3">
-                        {briefing.risks.map((risk, i) => (
-                          <motion.li 
-                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                            key={i} className="flex items-start gap-2.5"
-                          >
-                            <AlertTriangle size={14} className="text-rose-500 shrink-0 mt-0.5" />
-                            <span className="text-sm font-medium text-slate-700 leading-snug">{risk}</span>
-                          </motion.li>
-                        ))}
+                        {briefing.risks.map((risk, i) => {
+                          const isPrimary = risk.startsWith("PRIMARY:");
+                          const isRegional = risk.startsWith("REGIONAL VULNERABILITY:");
+                          const text = risk.replace(/^(PRIMARY:|SECONDARY:|REGIONAL VULNERABILITY:)\s*/, '');
+                          
+                          let icon = <AlertTriangle size={14} className="text-slate-400 shrink-0 mt-0.5" />;
+                          if (isPrimary) icon = <AlertTriangle size={14} className="text-rose-500 shrink-0 mt-0.5" />;
+                          if (isRegional) icon = <Target size={14} className="text-amber-500 shrink-0 mt-0.5" />;
+                          
+                          return (
+                            <motion.li 
+                              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                              key={i} className="flex items-start gap-2.5"
+                            >
+                              {icon}
+                              <span className={`text-sm font-medium leading-snug ${isPrimary ? 'text-slate-900 font-bold' : 'text-slate-700'}`}>{text}</span>
+                            </motion.li>
+                          );
+                        })}
                       </ul>
                     </section>
 
@@ -237,15 +317,15 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                     </section>
                   </div>
 
-                  {/* Outlook */}
-                  <section className="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100/50">
-                    <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-indigo-700 mb-2">Forecast Outlook</h3>
-                    <p className="text-sm font-medium text-slate-700 leading-relaxed">{briefing.outlook}</p>
+                  {/* Dynamic Confidence Reasoning */}
+                  <section className="p-5 rounded-2xl bg-slate-100/50 border border-slate-200/50">
+                    <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 mb-2">Confidence Reasoning</h3>
+                    <p className="text-sm font-medium text-slate-700 leading-relaxed italic">{briefing.outlook}</p>
                   </section>
 
                   {/* Timeline Summary */}
                   <section>
-                    <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 mb-4">Critical Event Timeline</h3>
+                    <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 mb-4">Cascading Event Timeline</h3>
                     <div className="flex flex-wrap gap-3">
                       {briefing.timeline.filter(t => t.alert).map((t, i) => (
                         <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-100">
@@ -254,7 +334,7 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                         </div>
                       ))}
                       {briefing.timeline.filter(t => t.alert).length === 0 && (
-                        <div className="text-xs font-medium text-slate-500 italic">No critical temporal alerts projected.</div>
+                        <div className="text-xs font-medium text-slate-500 italic">No cascading operational alerts projected.</div>
                       )}
                     </div>
                   </section>
