@@ -2,31 +2,55 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Cloud, CloudRain, CloudSnow, Sun, CloudLightning, Wind,
+  Cloud, CloudRain, CloudSnow, Sun, Moon, CloudLightning, Wind,
   Droplets, Eye, Thermometer, MapPin, RefreshCw, X,
   TrendingUp, AlertTriangle, Activity, ChevronRight, Search, Map
 } from 'lucide-react';
 
 /* ─── Weather code → condition mapping (WMO codes) ──────────────── */
-const WMO_MAP = {
-  0: { label: 'Clear Sky', icon: Sun, gradient: 'from-amber-50 to-orange-50', textColor: 'text-amber-600' },
-  1: { label: 'Mainly Clear', icon: Sun, gradient: 'from-amber-50 to-yellow-50', textColor: 'text-amber-500' },
-  2: { label: 'Partly Cloudy', icon: Cloud, gradient: 'from-slate-50 to-blue-50', textColor: 'text-blue-500' },
-  3: { label: 'Overcast', icon: Cloud, gradient: 'from-slate-100 to-slate-200', textColor: 'text-slate-500' },
-  45: { label: 'Foggy', icon: Cloud, gradient: 'from-slate-100 to-zinc-50', textColor: 'text-slate-400' },
-  48: { label: 'Icy Fog', icon: CloudSnow, gradient: 'from-blue-50 to-slate-100', textColor: 'text-blue-400' },
-  51: { label: 'Light Drizzle', icon: CloudRain, gradient: 'from-blue-50 to-indigo-50', textColor: 'text-blue-500' },
-  53: { label: 'Moderate Drizzle', icon: CloudRain, gradient: 'from-blue-100 to-indigo-100', textColor: 'text-blue-600' },
-  55: { label: 'Heavy Drizzle', icon: CloudRain, gradient: 'from-indigo-100 to-blue-200', textColor: 'text-indigo-600' },
-  61: { label: 'Light Rain', icon: CloudRain, gradient: 'from-blue-100 to-indigo-50', textColor: 'text-blue-600' },
-  63: { label: 'Moderate Rain', icon: CloudRain, gradient: 'from-indigo-100 to-blue-100', textColor: 'text-indigo-600' },
-  65: { label: 'Heavy Rain', icon: CloudRain, gradient: 'from-indigo-200 to-blue-200', textColor: 'text-indigo-700' },
-  71: { label: 'Light Snow', icon: CloudSnow, gradient: 'from-sky-50 to-blue-50', textColor: 'text-sky-500' },
-  80: { label: 'Rain Showers', icon: CloudRain, gradient: 'from-blue-100 to-violet-100', textColor: 'text-blue-600' },
-  95: { label: 'Thunderstorm', icon: CloudLightning, gradient: 'from-violet-100 to-indigo-200', textColor: 'text-violet-700' },
+
+const isNightTime = () => {
+  const hour = new Date().getHours();
+  return hour >= 18 || hour <= 5;
 };
 
-const getCondition = (code) => WMO_MAP[code] ?? WMO_MAP[2];
+const WMO_MAP = {
+  0: { label: 'Clear Sky', icon: Sun, nightIcon: Moon, gradient: 'from-amber-50 to-orange-50', nightGradient: 'from-slate-900 to-indigo-950', textColor: 'text-amber-600', nightTextColor: 'text-indigo-200' },
+  1: { label: 'Mainly Clear', icon: Sun, nightIcon: Moon, gradient: 'from-amber-50 to-yellow-50', nightGradient: 'from-slate-900 to-slate-950', textColor: 'text-amber-500', nightTextColor: 'text-slate-200' },
+  2: { label: 'Partly Cloudy', icon: Cloud, gradient: 'from-slate-50 to-blue-50', nightGradient: 'from-slate-900 to-blue-950', textColor: 'text-blue-500', nightTextColor: 'text-blue-200' },
+  3: { label: 'Overcast', icon: Cloud, gradient: 'from-slate-100 to-slate-200', nightGradient: 'from-slate-800 to-slate-900', textColor: 'text-slate-500', nightTextColor: 'text-slate-200' },
+  45: { label: 'Foggy', icon: Cloud, gradient: 'from-slate-100 to-zinc-50', nightGradient: 'from-slate-800 to-slate-900', textColor: 'text-slate-400', nightTextColor: 'text-slate-200' },
+  48: { label: 'Icy Fog', icon: CloudSnow, gradient: 'from-blue-50 to-slate-100', nightGradient: 'from-slate-900 to-blue-900', textColor: 'text-blue-400', nightTextColor: 'text-blue-200' },
+  51: { label: 'Light Drizzle', icon: CloudRain, gradient: 'from-blue-50 to-indigo-50', nightGradient: 'from-slate-900 to-indigo-900', textColor: 'text-blue-500', nightTextColor: 'text-blue-200' },
+  53: { label: 'Moderate Drizzle', icon: CloudRain, gradient: 'from-blue-100 to-indigo-100', nightGradient: 'from-indigo-900 to-blue-900', textColor: 'text-blue-600', nightTextColor: 'text-blue-200' },
+  55: { label: 'Heavy Drizzle', icon: CloudRain, gradient: 'from-indigo-100 to-blue-200', nightGradient: 'from-indigo-900 to-slate-900', textColor: 'text-indigo-600', nightTextColor: 'text-indigo-200' },
+  61: { label: 'Light Rain', icon: CloudRain, gradient: 'from-blue-100 to-indigo-50', nightGradient: 'from-blue-900 to-slate-900', textColor: 'text-blue-600', nightTextColor: 'text-blue-200' },
+  63: { label: 'Moderate Rain', icon: CloudRain, gradient: 'from-indigo-100 to-blue-100', nightGradient: 'from-indigo-900 to-blue-900', textColor: 'text-indigo-600', nightTextColor: 'text-indigo-200' },
+  65: { label: 'Heavy Rain', icon: CloudRain, gradient: 'from-indigo-200 to-blue-200', nightGradient: 'from-indigo-950 to-blue-950', textColor: 'text-indigo-700', nightTextColor: 'text-indigo-200' },
+  71: { label: 'Light Snow', icon: CloudSnow, gradient: 'from-sky-50 to-blue-50', nightGradient: 'from-sky-900 to-blue-900', textColor: 'text-sky-500', nightTextColor: 'text-sky-200' },
+  80: { label: 'Rain Showers', icon: CloudRain, gradient: 'from-blue-100 to-violet-100', nightGradient: 'from-blue-900 to-violet-900', textColor: 'text-blue-600', nightTextColor: 'text-blue-200' },
+  95: { label: 'Thunderstorm', icon: CloudLightning, gradient: 'from-violet-100 to-indigo-200', nightGradient: 'from-violet-900 to-indigo-900', textColor: 'text-violet-700', nightTextColor: 'text-violet-200' },
+};
+
+const getCondition = (code) => {
+  const isNight = isNightTime();
+  const base = WMO_MAP[code] ?? WMO_MAP[2];
+
+  if (!isNight) return base;
+
+  // Handle night overrides
+  let label = base.label;
+  if (code === 0 || code === 1) label = 'Clear Night';
+  if (code === 2 || code === 3) label = label.includes('Partly') ? 'Partly Cloudy Night' : 'Overcast Night';
+
+  return {
+    ...base,
+    label,
+    icon: base.nightIcon || base.icon,
+    gradient: base.nightGradient || 'from-slate-900 to-slate-950',
+    textColor: base.nightTextColor || 'text-slate-400'
+  };
+};
 
 const getSurgeImpact = (weather) => {
   const temp = weather.current.temperature_2m;
@@ -226,21 +250,36 @@ const WeatherChip = ({ weather, location, loading, errorState, onClick }) => {
   const impact = getSurgeImpact(weather);
   const Icon = cond.icon;
   const temp = Math.round(weather.current.temperature_2m);
+  const isNight = isNightTime();
 
   return (
     <button
       onClick={onClick}
-      className={`hidden lg:flex items-center gap-2.5 px-4 py-2 vision-glass-light rounded-xl cursor-pointer hover:bg-white/80 transition-all group border shadow-sm ${errorState ? 'border-amber-200/50 bg-amber-50/30' : 'border-white/60'}`}
+      className={`hidden lg:flex items-center gap-3 px-4 py-2.5 rounded-2xl cursor-pointer transition-all duration-300 group border backdrop-blur-2xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:scale-[1.02] hover:shadow-[0_12px_30px_rgba(0,0,0,0.16)] ${errorState
+        ? 'border-amber-200/50 bg-amber-50/60'
+        : isNight
+          ? 'border-indigo-400/20 bg-slate-900/70 hover:bg-slate-900/85'
+          : 'border-white/60 bg-white/65 hover:bg-white/80'
+        }`}
       title="Open Weather Intelligence"
     >
-      <Icon size={16} className={errorState ? 'text-amber-500' : cond.textColor} />
+      <Icon
+        size={17}
+        className={
+          errorState
+            ? 'text-amber-500'
+            : isNight
+              ? 'text-indigo-100 drop-shadow-[0_0_8px_rgba(129,140,248,0.45)]'
+              : cond.textColor
+        }
+      />
       <div className="text-left">
-        <p className="text-xs font-bold text-slate-700 leading-none mb-0.5">
+        <p className={`text-[11px] font-bold leading-none mb-0.5 tracking-wide ${isNight ? 'text-slate-50' : 'text-slate-700'}`}>
           {cond.label} · {temp}°C
         </p>
         <div className="flex items-center gap-1.5 mt-1">
           <div className={`w-1.5 h-1.5 rounded-full ${errorState ? 'bg-amber-400' : impact.dot} ${loading ? 'animate-pulse' : ''}`} />
-          <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+          <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${isNight ? 'text-indigo-100/90' : 'text-slate-500'}`}>
             {location?.city}{location?.country ? `, ${location.country}` : ''}
             {errorState && ' (Offline)'}
           </p>
@@ -249,7 +288,13 @@ const WeatherChip = ({ weather, location, loading, errorState, onClick }) => {
       {loading ? (
         <RefreshCw size={12} className="text-slate-400 animate-spin ml-2" />
       ) : (
-        <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-600 transition-colors ml-2" />
+        <ChevronRight
+          size={15}
+          className={`ml-1 transition-all duration-300 ${isNight
+              ? 'text-indigo-200/70 group-hover:text-indigo-100'
+              : 'text-slate-400 group-hover:text-slate-700'
+            }`}
+        />
       )}
     </button>
   );
@@ -259,6 +304,7 @@ const WeatherChip = ({ weather, location, loading, errorState, onClick }) => {
 const HourlyBars = ({ hourly, field, isPrecip, unit }) => {
   if (!hourly) return null;
   const now = new Date().getHours();
+  const isNight = isNightTime();
   const hours = hourly.time.slice(now, now + 8).map((t, i) => ({
     hour: new Date(t).getHours(),
     value: hourly[field]?.[now + i] ?? 0,
@@ -276,8 +322,8 @@ const HourlyBars = ({ hourly, field, isPrecip, unit }) => {
       <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" preserveAspectRatio="none" viewBox="0 0 100 100">
         <defs>
           <linearGradient id={`grad-${field}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={isPrecip ? "#818cf8" : "#60a5fa"} stopOpacity="0.25" />
-            <stop offset="100%" stopColor={isPrecip ? "#818cf8" : "#60a5fa"} stopOpacity="0" />
+            <stop offset="0%" stopColor={isPrecip ? (isNight ? "#818cf8" : "#818cf8") : (isNight ? "#6366f1" : "#60a5fa")} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={isPrecip ? (isNight ? "#818cf8" : "#818cf8") : (isNight ? "#6366f1" : "#60a5fa")} stopOpacity="0" />
           </linearGradient>
         </defs>
         <motion.polyline
@@ -286,7 +332,7 @@ const HourlyBars = ({ hourly, field, isPrecip, unit }) => {
           transition={{ duration: 1.2, ease: "easeInOut" }}
           points={points}
           fill="none"
-          stroke={isPrecip ? "#6366f1" : "#3b82f6"}
+          stroke={isPrecip ? (isNight ? "#818cf8" : "#6366f1") : (isNight ? "#818cf8" : "#3b82f6")}
           strokeWidth="2"
           vectorEffect="non-scaling-stroke"
         />
@@ -306,7 +352,7 @@ const HourlyBars = ({ hourly, field, isPrecip, unit }) => {
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className={`text-[10px] font-mono font-bold ${isPrecip ? 'text-indigo-600' : 'text-blue-600'} opacity-80 group-hover:opacity-100 transition-opacity`}
+              className={`text-[10px] font-mono font-bold ${isPrecip ? (isNight ? 'text-indigo-400' : 'text-indigo-600') : (isNight ? 'text-blue-400' : 'text-blue-600')} opacity-80 group-hover:opacity-100 transition-opacity`}
             >
               {Math.round(h.value)}{unit}
             </motion.span>
@@ -315,11 +361,11 @@ const HourlyBars = ({ hourly, field, isPrecip, unit }) => {
                 initial={{ height: 0 }}
                 animate={{ height: `${heightPx}px` }}
                 transition={{ delay: i * 0.05, duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }}
-                className={`w-full max-w-[20px] rounded-t-md ${isPrecip ? 'bg-gradient-to-t from-indigo-200/40 to-indigo-400/60 border-indigo-300/50' : 'bg-gradient-to-t from-blue-200/40 to-blue-400/60 border-blue-300/50'} backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] border-t border-l border-r glass-reflection group-hover:brightness-110 transition-all`}
+                className={`w-full max-w-[20px] rounded-t-md ${isPrecip ? (isNight ? 'bg-gradient-to-t from-indigo-900/40 to-indigo-500/60 border-indigo-400/30' : 'bg-gradient-to-t from-indigo-200/40 to-indigo-400/60 border-indigo-300/50') : (isNight ? 'bg-gradient-to-t from-blue-900/40 to-blue-500/60 border-blue-400/30' : 'bg-gradient-to-t from-blue-200/40 to-blue-400/60 border-blue-300/50')} backdrop-blur-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] border-t border-l border-r glass-reflection group-hover:brightness-110 transition-all`}
                 style={{ minHeight: '4px' }}
               />
             </div>
-            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+            <span className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${isNight ? 'text-indigo-300/50' : 'text-slate-400'}`}>
               {h.hour === 0 ? '12A' : h.hour < 12 ? `${h.hour}A` : h.hour === 12 ? '12P' : `${h.hour - 12}P`}
             </span>
           </div>
@@ -355,6 +401,7 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
   const humidity = weather.current.relative_humidity_2m;
   const windSpeed = Math.round(weather.current.wind_speed_10m);
   const precipProb = weather.current.precipitation_probability;
+  const isNight = isNightTime();
 
   const insights = generateInsights(weather, location?.city);
 
@@ -401,7 +448,7 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(15, 23, 42, 0.55)',
+          background: isNight ? 'rgba(8, 10, 24, 0.7)' : 'rgba(15, 23, 42, 0.55)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
           zIndex: -1,
@@ -421,20 +468,20 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
           maxHeight: '90vh',
           overflowY: 'auto',
           position: 'relative',
-          background: 'rgba(255, 255, 255, 0.85)',
-          boxShadow: '0 32px 80px rgba(15,23,42,0.25), 0 8px 24px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,1)',
+          background: isNight ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.85)',
+          boxShadow: isNight ? '0 32px 80px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)' : '0 32px 80px rgba(15,23,42,0.25), 0 8px 24px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,1)',
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Premium Panel Header */}
         <div className={`bg-gradient-to-br ${cond.gradient} px-8 pt-8 pb-8 relative overflow-hidden transition-all duration-700`}>
-          <div className="absolute top-0 right-0 w-80 h-80 bg-white/50 blur-[60px] rounded-full translate-x-1/4 -translate-y-1/4 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/40 blur-[50px] rounded-full -translate-x-1/4 translate-y-1/4 pointer-events-none" />
+          <div className={`absolute top-0 right-0 w-80 h-80 ${isNight ? 'bg-indigo-500/10' : 'bg-white/50'} blur-[60px] rounded-full translate-x-1/4 -translate-y-1/4 pointer-events-none`} />
+          <div className={`absolute bottom-0 left-0 w-64 h-64 ${isNight ? 'bg-blue-500/10' : 'bg-white/40'} blur-[50px] rounded-full -translate-x-1/4 translate-y-1/4 pointer-events-none`} />
 
           <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
             <button
               onClick={handleAutoLocate}
-              className="p-2 rounded-full vision-glass-light hover:bg-white/90 text-slate-500 transition-all shadow-sm flex items-center justify-center"
+              className={`p-2 rounded-full vision-glass-light hover:bg-white/90 transition-all shadow-sm flex items-center justify-center ${isNight ? 'text-indigo-200 border-indigo-400/20' : 'text-slate-500'}`}
               aria-label="Use current location"
               title="Use current location"
             >
@@ -442,7 +489,7 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-full vision-glass-light hover:bg-white/90 text-slate-500 transition-all shadow-sm flex items-center justify-center"
+              className={`p-2 rounded-full vision-glass-light hover:bg-white/90 transition-all shadow-sm flex items-center justify-center ${isNight ? 'text-indigo-200 border-indigo-400/20' : 'text-slate-500'}`}
               aria-label="Close weather panel"
             >
               <X size={18} strokeWidth={2.5} />
@@ -451,30 +498,30 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
 
           <div className="relative z-10 flex items-start justify-between">
             <div>
-              <div className="flex items-center gap-2 mb-4 bg-white/50 w-max px-3 py-1.5 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)] border border-white/60">
-                <MapPin size={12} className="text-slate-600" />
-                <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">
+              <div className={`flex items-center gap-2 mb-4 w-max px-3 py-1.5 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] border ${isNight ? 'bg-black/30 border-white/20' : 'bg-white/50 border-white/60'}`}>
+                <MapPin size={12} className={isNight ? 'text-indigo-300' : 'text-slate-600'} />
+                <span className={`text-[10px] font-bold uppercase tracking-widest ${isNight ? 'text-indigo-100' : 'text-slate-700'}`}>
                   {location?.city}{location?.state ? `, ${location.state}` : ''}, {location?.country}
                 </span>
                 <div className={`w-1.5 h-1.5 rounded-full ${impact.dot} ${searching ? 'animate-pulse bg-blue-500' : 'animate-pulse'} ml-1`} />
               </div>
               <div className="flex items-end gap-5">
-                <p className="text-7xl font-mono font-bold text-slate-800 tracking-tighter drop-shadow-sm">{temp}°</p>
+                <p className={`text-7xl font-mono font-bold tracking-tighter drop-shadow-sm ${isNight ? 'text-white' : 'text-slate-800'}`}>{temp}°</p>
                 <div className="pb-2.5">
-                  <p className="text-2xl font-serif font-bold text-slate-800 tracking-tight">{cond.label}</p>
-                  <p className="text-sm text-slate-600 font-medium mt-0.5">Feels like {feelsLike}°C</p>
+                  <p className={`text-2xl font-serif font-bold tracking-tight ${isNight ? 'text-indigo-50' : 'text-slate-800'}`}>{cond.label}</p>
+                  <p className={`text-sm font-medium mt-0.5 ${isNight ? 'text-indigo-300' : 'text-slate-600'}`}>Feels like {feelsLike}°C</p>
                 </div>
               </div>
             </div>
 
             <div className="relative pr-2">
-              <Icon size={96} className={`${cond.textColor} drop-shadow-lg opacity-90`} strokeWidth={1.2} />
-              <div className="absolute inset-0 blur-2xl opacity-30 bg-current rounded-full" />
+              <Icon size={96} className={`${cond.textColor} drop-shadow-lg opacity-100`} strokeWidth={1.5} />
+              <div className="absolute inset-0 blur-2xl opacity-40 bg-current rounded-full" />
             </div>
           </div>
 
           {/* Conditions strip */}
-          <div className="relative z-10 flex flex-wrap items-center gap-4 mt-8 p-4 rounded-2xl vision-glass-light border border-white/60 shadow-sm">
+          <div className={`relative z-10 flex flex-wrap items-center gap-4 mt-8 p-4 rounded-2xl vision-glass-light border shadow-sm ${isNight ? 'border-white/20 bg-black/10' : 'border-white/60'}`}>
             {[
               { icon: Droplets, label: 'Humidity', value: `${humidity}%` },
               { icon: Wind, label: 'Wind', value: `${windSpeed} km/h` },
@@ -482,12 +529,12 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
               { icon: Thermometer, label: 'Apparent', value: `${feelsLike}°C` },
             ].map(({ icon: I, label, value }) => (
               <div key={label} className="flex items-center gap-3 flex-1 min-w-[120px]">
-                <div className="p-2.5 rounded-xl bg-white/60 text-slate-600 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+                <div className={`p-2.5 rounded-xl text-slate-600 shadow-[0_2px_4px_rgba(0,0,0,0.02)] ${isNight ? 'bg-white/10 text-indigo-200' : 'bg-white/60'}`}>
                   <I size={16} strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{label}</p>
-                  <p className="text-base font-mono font-bold text-slate-800">{value}</p>
+                  <p className={`text-[10px] font-bold uppercase tracking-widest ${isNight ? 'text-indigo-200/60' : 'text-slate-500'}`}>{label}</p>
+                  <p className={`text-base font-mono font-bold ${isNight ? 'text-white' : 'text-slate-800'}`}>{value}</p>
                 </div>
               </div>
             ))}
@@ -495,10 +542,10 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
         </div>
 
         {/* Panel Body */}
-        <div className="px-8 py-8 space-y-8">
+        <div className={`px-8 py-8 space-y-8 ${isNight ? 'bg-slate-900/50' : ''}`}>
 
           {/* Healthcare surge impact */}
-          <div className={`relative p-5 rounded-2xl border ${impact.bg} overflow-hidden ${impact.glow} flex items-center gap-5 transition-all hover:shadow-md`}>
+          <div className={`relative p-5 rounded-2xl border ${impact.bg} overflow-hidden ${impact.glow} flex items-center gap-5 transition-all hover:shadow-md ${isNight ? 'brightness-90 contrast-110' : ''}`}>
             {/* Ambient glow effect inside the card */}
             <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full blur-3xl opacity-30 ${impact.dot}`} />
 
@@ -507,10 +554,10 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
                 <div className={`w-2.5 h-2.5 rounded-full ${impact.dot} shadow-[0_0_8px_currentColor] animate-pulse`} />
                 <p className={`text-[10px] font-bold uppercase tracking-[0.15em] ${impact.color}`}>Surge Impact Assessment</p>
               </div>
-              <p className="text-xl font-serif font-bold text-slate-800 mb-1">{impact.title}</p>
+              <p className={`text-xl font-serif font-bold mb-1 ${isNight ? 'text-white' : 'text-slate-800'}`}>{impact.title}</p>
               <p className={`text-sm font-medium ${impact.color} opacity-90`}>{impact.label}</p>
             </div>
-            <div className="relative z-10 text-right shrink-0 flex flex-col items-end justify-center pl-4 border-l border-slate-200/50">
+            <div className={`relative z-10 text-right shrink-0 flex flex-col items-end justify-center pl-4 border-l ${isNight ? 'border-white/10' : 'border-slate-200/50'}`}>
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Projected ER Load</span>
               <span className={`text-3xl font-mono font-bold ${impact.color} tracking-tighter`}>{impact.surge}</span>
             </div>
@@ -520,7 +567,7 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
           <div className="relative">
             <div className="flex items-center gap-2 mb-4">
               <Activity size={14} className="text-indigo-500" />
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500">Operational Weather Intelligence</p>
+              <p className={`text-[11px] font-bold uppercase tracking-[0.15em] ${isNight ? 'text-indigo-300/50' : 'text-slate-500'}`}>Operational Weather Intelligence</p>
             </div>
             <div className="grid gap-3">
               {insights.map((msg, i) => (
@@ -529,11 +576,11 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.1 }}
-                  className="group relative flex items-start gap-3 p-4 rounded-xl vision-glass-light hover:bg-white/80 transition-all border border-slate-200/60 shadow-[0_2px_8px_-4px_rgba(15,23,42,0.05)]"
+                  className={`group relative flex items-start gap-3 p-4 rounded-xl vision-glass-light hover:bg-white/80 transition-all border shadow-[0_2px_8px_-4px_rgba(15,23,42,0.05)] ${isNight ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'border-slate-200/60'}`}
                 >
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-400 to-blue-400 rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
-                  <p className="text-sm font-medium text-slate-700 leading-relaxed font-sans">{msg}</p>
+                  <p className={`text-sm font-medium leading-relaxed font-sans ${isNight ? 'text-indigo-100/90' : 'text-slate-700'}`}>{msg}</p>
                 </motion.div>
               ))}
             </div>
@@ -542,13 +589,13 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
           <div className="grid grid-cols-2 gap-8">
             {/* Hourly temp */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500 mb-2">Next 8-Hour Temperature</p>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.15em] mb-2 ${isNight ? 'text-indigo-300/50' : 'text-slate-500'}`}>Next 8-Hour Temperature</p>
               <HourlyBars hourly={weather.hourly} field="temperature_2m" isPrecip={false} unit="°" />
             </div>
 
             {/* Rain probability */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500 mb-2">Precipitation Probability</p>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.15em] mb-2 ${isNight ? 'text-indigo-300/50' : 'text-slate-500'}`}>Precipitation Probability</p>
               <HourlyBars hourly={weather.hourly} field="precipitation_probability" isPrecip={true} unit="%" />
             </div>
           </div>
@@ -561,13 +608,13 @@ const WeatherPanel = ({ weather, location, onClose, onCitySearch, onAutoLocate, 
                 value={cityInput}
                 onChange={e => { setCityInput(e.target.value); setSearchErr(''); }}
                 placeholder="Monitor alternate regional facility..."
-                className="w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium text-slate-800 vision-glass-light border border-slate-200/60 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100/50 transition-all placeholder:text-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+                className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium vision-glass-light border focus:outline-none focus:ring-4 transition-all placeholder:text-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] ${isNight ? 'bg-black/20 border-white/10 text-white focus:border-indigo-500 focus:ring-indigo-500/20' : 'border-slate-200/60 text-slate-800 focus:border-blue-400 focus:bg-white focus:ring-blue-100/50'}`}
               />
             </div>
             <button
               type="submit"
               disabled={searching}
-              className="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-slate-900/20"
+              className={`px-6 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg ${isNight ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-900/20' : 'bg-slate-800 hover:bg-slate-900 text-white shadow-slate-900/20'}`}
             >
               {searching ? <RefreshCw size={14} className="animate-spin" /> : null}
               Forecast
