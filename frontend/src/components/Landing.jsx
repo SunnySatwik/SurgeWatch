@@ -187,7 +187,7 @@ const DashboardPreview = () => {
                   { label: 'Patients', value: '194', color: 'text-slate-800' },
                 ].map(card => (
                   <div key={card.label} className="flex-1 vision-glass-light rounded-[1.25rem] p-4 border-white/50">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{card.label}</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{card.label}</p>
                     <p className={`text-xl font-mono font-bold ${card.color}`}>{card.value}</p>
                   </div>
                 ))}
@@ -220,7 +220,7 @@ const DashboardPreview = () => {
       >
         <Sparkles size={14} className="text-indigo-500" />
         <div>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">AI Confidence</p>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">AI Confidence</p>
           <p className="text-sm font-mono font-bold text-slate-800">94.8%</p>
         </div>
       </motion.div>
@@ -276,9 +276,9 @@ const Landing = ({ onLaunch }) => (
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         >
           <Pill>Series A Intelligence Platform</Pill>
-          <h1 className="text-6xl lg:text-7xl font-display font-bold tracking-tight leading-[1.0] text-slate-900 mb-6">
+          <h1 className="text-7xl lg:text-8xl font-serif font-bold tracking-tight leading-[1.0] text-slate-900 mb-6">
             Hospital intelligence,{' '}
-            <span className="text-gradient-cobalt">redefined.</span>
+            <span className="text-gradient-cobalt italic">redefined.</span>
           </h1>
           <p className="text-lg text-slate-500 mb-10 leading-relaxed max-w-lg font-medium">
             SurgeWatch predicts patient surges 7 days ahead with 94.8% accuracy — giving clinical leaders the time to act before capacity becomes a crisis.

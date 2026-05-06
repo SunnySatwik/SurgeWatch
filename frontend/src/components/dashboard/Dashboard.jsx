@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Activity, Bell, Calendar, ChevronRight, LayoutDashboard,
-  Home, Settings, TrendingUp, User, Zap, Cloud, Layers,
+  Home, Settings, TrendingUp, User, Layers,
   AlertTriangle, ArrowUpRight, BarChart2, Sparkles
 } from 'lucide-react';
 import { DASHBOARD_DATA } from '../../data/data';
@@ -11,15 +11,16 @@ import KPIOverlay from './KPIOverlay';
 import SHAPPanel from './SHAPPanel';
 import Recommendations from './Recommendations';
 import DepartmentSection from './DepartmentSection';
+import WeatherWidget from './WeatherWidget';
 
 const DAYS = DASHBOARD_DATA.map((d, i) => ({ label: d.day, index: i }));
 
 const riskConfig = {
   Critical: { badge: 'risk-badge-critical', glow: 'risk-critical', dot: 'bg-red-500' },
-  High:     { badge: 'risk-badge-high',     glow: '',              dot: 'bg-orange-400' },
-  Moderate: { badge: 'risk-badge-moderate', glow: '',              dot: 'bg-amber-400' },
-  Medium:   { badge: 'risk-badge-moderate', glow: '',              dot: 'bg-amber-400' },
-  Low:      { badge: 'risk-badge-low',      glow: '',              dot: 'bg-emerald-500' },
+  High: { badge: 'risk-badge-high', glow: '', dot: 'bg-orange-400' },
+  Moderate: { badge: 'risk-badge-moderate', glow: '', dot: 'bg-amber-400' },
+  Medium: { badge: 'risk-badge-moderate', glow: '', dot: 'bg-amber-400' },
+  Low: { badge: 'risk-badge-low', glow: '', dot: 'bg-emerald-500' },
 };
 
 const Dashboard = ({ onBack }) => {
@@ -57,7 +58,7 @@ const Dashboard = ({ onBack }) => {
       {/* ── Sidebar ── */}
       <aside className="w-[72px] md:w-64 m-4 mr-0 vision-glass rounded-[2rem] flex flex-col items-center md:items-start py-8 z-50 relative shrink-0">
         {/* Logo */}
-        <button 
+        <button
           onClick={onBack}
           className="px-5 mb-10 flex items-center gap-3 w-full justify-center md:justify-start group cursor-pointer hover:opacity-80 transition-opacity"
         >
@@ -118,14 +119,7 @@ const Dashboard = ({ onBack }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Weather widget */}
-            <div className="hidden lg:flex items-center gap-2.5 px-4 py-2 vision-glass-light rounded-xl">
-              <Cloud className="text-blue-500 w-4 h-4" />
-              <div>
-                <p className="text-xs font-bold text-slate-700">Partly Cloudy · 22°C</p>
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Met-Signal Active</p>
-              </div>
-            </div>
+            <WeatherWidget />
 
             <div className="w-px h-8 bg-slate-200/60" />
 
@@ -148,7 +142,7 @@ const Dashboard = ({ onBack }) => {
 
         {/* ── Day Selector ── */}
         <div className="flex items-center gap-2 mb-5 shrink-0">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:block mr-1">Select Day</span>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:block mr-1">Select Day</span>
           <div className="flex gap-1.5 p-1.5 vision-glass rounded-2xl">
             {DAYS.map(({ label, index }) => {
               const dayData = DASHBOARD_DATA[index];
@@ -158,11 +152,10 @@ const Dashboard = ({ onBack }) => {
                 <button
                   key={label}
                   onClick={() => setSelectedDayIndex(index)}
-                  className={`relative px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center gap-0.5 ${
-                    isActive
-                      ? 'bg-white text-slate-800 shadow-md shadow-blue-500/10'
-                      : 'text-slate-400 hover:text-slate-700 hover:bg-white/50'
-                  }`}
+                  className={`relative px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center gap-0.5 ${isActive
+                    ? 'bg-white text-slate-800 shadow-md shadow-blue-500/10'
+                    : 'text-slate-400 hover:text-slate-700 hover:bg-white/50'
+                    }`}
                 >
                   <span>{label}</span>
                   <span className={`w-1.5 h-1.5 rounded-full ${isActive ? r.dot : 'bg-slate-200'}`} />
@@ -173,8 +166,8 @@ const Dashboard = ({ onBack }) => {
 
           <div className="ml-auto flex items-center gap-2 vision-glass-light px-4 py-2 rounded-xl">
             <Sparkles size={14} className="text-indigo-500" />
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden sm:block">
-              AI Confidence: <span className="text-indigo-600">{currentData?.confidence ?? 0}%</span>
+            <span className="text-xs font-semibold text-slate-600 hidden sm:block">
+              AI Confidence: <span className="text-indigo-600 font-bold font-mono">{currentData?.confidence ?? 0}%</span>
             </span>
           </div>
         </div>
@@ -183,12 +176,12 @@ const Dashboard = ({ onBack }) => {
         <div className="flex-1 space-y-5 min-w-0">
 
           {/* Row 1: Chart + KPI + SHAP */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-w-0">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start min-w-0">
 
             {/* Forecast Chart Card */}
             <motion.div
               style={{ x: mousePos.x * 12, y: mousePos.y * 8 }}
-              className={`lg:col-span-7 vision-card p-6 glass-reflection flex flex-col min-w-0 ${risk.glow}`}
+              className={`lg:col-span-7 vision-card p-6 glass-reflection min-w-0 h-fit ${risk.glow}`}
             >
               {/* Chart header */}
               <div className="flex items-start justify-between mb-4">
@@ -206,7 +199,7 @@ const Dashboard = ({ onBack }) => {
               </div>
 
               {/* Chart */}
-              <div className="h-[220px] w-full min-w-0 mb-4">
+              <div className="h-[320px] w-full min-w-0">
                 <ForecastChart
                   data={DASHBOARD_DATA ?? []}
                   selectedIndex={selectedDayIndex}
@@ -284,11 +277,11 @@ const NavItem = ({ icon: Icon, label, active = false }) => (
 
 const MicroStat = ({ label, value, up, neutral }) => (
   <div className="vision-glass-light px-3 py-2.5 rounded-xl flex flex-col gap-0.5">
-    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
+    <span className="label-meta-sm">{label}</span>
     <div className="flex items-center gap-1.5">
-      <span className="text-base font-mono font-bold text-slate-800">{value}</span>
+      <span className="text-sm font-mono font-bold text-slate-800">{value}</span>
       {!neutral && (
-        <span className={`text-[9px] font-bold ${up ? 'text-rose-500' : 'text-emerald-500'}`}>
+        <span className={`text-xs font-bold ${up ? 'text-rose-500' : 'text-emerald-500'}`}>
           {up ? '↑' : '↓'}
         </span>
       )}

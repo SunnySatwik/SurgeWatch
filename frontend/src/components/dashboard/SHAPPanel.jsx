@@ -18,7 +18,7 @@ const SHAPPanel = ({ data }) => {
             <h3 className="text-sm font-display font-bold text-slate-800">Neural Attribution</h3>
             <div className="flex items-center gap-1">
               <Sparkles size={9} className="text-indigo-400" />
-              <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest">SHAP Explainability</span>
+              <span className="label-meta-sm text-indigo-500">SHAP Explainability</span>
             </div>
           </div>
         </div>
@@ -31,11 +31,11 @@ const SHAPPanel = ({ data }) => {
       <div className="flex items-center gap-4 mb-4">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-1.5 rounded-full bg-rose-400" />
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Surge Driver</span>
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Surge Driver</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-1.5 rounded-full bg-emerald-400" />
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mitigating</span>
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mitigating</span>
         </div>
       </div>
 
@@ -47,10 +47,10 @@ const SHAPPanel = ({ data }) => {
           return (
             <div key={i}>
               <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] font-semibold text-slate-600 truncate max-w-[60%]">
+                <span className="text-xs font-medium text-slate-700 truncate max-w-[60%]">
                   {item?.factor ?? 'Unknown'}
                 </span>
-                <span className={`text-[10px] font-mono font-bold ${isNeg ? 'text-rose-600' : 'text-emerald-600'}`}>
+                <span className={`text-xs font-mono font-bold ${isNeg ? 'text-rose-600' : 'text-emerald-600'}`}>
                   {isNeg ? '+' : '-'}{Math.abs(item?.value ?? 0)}%
                 </span>
               </div>
@@ -77,7 +77,7 @@ const SHAPPanel = ({ data }) => {
       {/* Footer insight */}
       <div className="mt-4 p-3 rounded-xl bg-indigo-50/60 border border-indigo-100/60 flex items-start gap-2.5">
         <Cpu size={13} className="text-indigo-500 mt-0.5 shrink-0" />
-        <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
+        <p className="text-xs text-slate-600 leading-relaxed font-medium">
           {shapData[0]?.factor
             ? `"${shapData[0].factor}" is the primary surge driver for ${data?.day ?? 'this day'}.`
             : 'SHAP engine identifies primary external drivers for capacity surge.'}
