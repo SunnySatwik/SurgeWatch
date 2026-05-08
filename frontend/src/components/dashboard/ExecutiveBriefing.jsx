@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Play, FileText, Activity, AlertTriangle, ArrowRight, ShieldAlert, HeartPulse, Shield, BarChart3, Square, Target, ChevronUp, ChevronDown } from 'lucide-react';
+import { X, Play, FileText, Activity, AlertTriangle, ArrowRight, ShieldAlert, HeartPulse, Shield, BarChart3, Square, Target } from 'lucide-react';
 import { generateBriefingData } from '../../utils/scenarioEngine';
 
 const MODES = [
@@ -38,7 +38,6 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
   const [processing, setProcessing] = useState(true);
   const [stepIndex, setStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const scrollRef = useRef(null);
 
   useEffect(() => {
     // Prevent background scrolling while modal is active
@@ -68,7 +67,7 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
 
   const handlePlay = () => {
     if (!('speechSynthesis' in window)) return;
-    
+
     if (isPlaying) {
       window.speechSynthesis.cancel();
       setIsPlaying(false);
@@ -76,7 +75,7 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
     }
 
     window.speechSynthesis.cancel();
-    
+
     const textToSpeak = `
       Executive Briefing. Mode: ${MODES.find(m => m.id === activeMode)?.label}.
       Escalation Level: ${briefing.escalation}.
@@ -89,51 +88,35 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.rate = 0.95;
     utterance.pitch = 0.9;
-    
+
     const voices = window.speechSynthesis.getVoices();
     const preferredVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Premium') || v.name.includes('Natural')));
     if (preferredVoice) utterance.voice = preferredVoice;
 
     utterance.onend = () => setIsPlaying(false);
     utterance.onerror = () => setIsPlaying(false);
-    
+
     setIsPlaying(true);
     window.speechSynthesis.speak(utterance);
   };
 
-  const scroll = (direction) => {
-    if (!scrollRef.current) return;
-    const scrollAmount = 350;
-    scrollRef.current.scrollBy({
-      top: direction === 'down' ? scrollAmount : -scrollAmount,
-      behavior: 'smooth'
-    });
-  };
 
   return ReactDOM.createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-slate-900/40 backdrop-blur-md p-4 md:p-12 min-h-screen"
     >
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" onClick={onClose} />
-      
+      <div className="absolute inset-0" onClick={onClose} />
+
       <motion.div
-        initial={{ scale: 0.95, y: 20, opacity: 0 }}
+        initial={{ scale: 0.98, y: 30, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
-        exit={{ scale: 0.95, y: 20, opacity: 0 }}
-        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="relative w-full max-w-5xl bg-white/90 backdrop-blur-2xl rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.2)] border border-white/50 overflow-hidden flex flex-col max-h-[90vh]"
+        exit={{ scale: 0.98, y: 30, opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="relative w-full max-w-6xl bg-white/95 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_80px_160px_-20px_rgba(0,0,0,0.4)] border border-white/60 flex flex-col min-h-[85vh] mb-12"
       >
-        <style>
-          {`
-            .briefing-scroll::-webkit-scrollbar { width: 8px; }
-            .briefing-scroll::-webkit-scrollbar-track { background: transparent; }
-            .briefing-scroll::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.1); border-radius: 10px; }
-            .briefing-scroll::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.2); }
-          `}
-        </style>
 
         {/* Header */}
         <div className="px-8 py-6 border-b border-slate-200/50 flex items-center justify-between shrink-0 bg-white/50">
@@ -144,33 +127,15 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
             <div>
               <h2 className="text-lg font-display font-bold text-slate-800 tracking-tight">AI Executive Briefing</h2>
               <div className="flex items-center gap-3 mt-1">
-                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Intelligence Report</p>
-                 {!processing && <EscalationBadge level={briefing.escalation} />}
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Intelligence Report</p>
+                {!processing && <EscalationBadge level={briefing.escalation} />}
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4">
             {!processing && (
-              <div className="flex items-center gap-2 mr-2">
-                <button 
-                  onClick={() => scroll('up')}
-                  className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-all shadow-sm"
-                  title="Scroll Up"
-                >
-                  <ChevronUp size={16} />
-                </button>
-                <button 
-                  onClick={() => scroll('down')}
-                  className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-all shadow-sm"
-                  title="Scroll Down"
-                >
-                  <ChevronDown size={16} />
-                </button>
-              </div>
-            )}
-            {!processing && (
-              <button 
+              <button
                 onClick={handlePlay}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm
                   ${isPlaying ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-white text-slate-700 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'}`}
@@ -186,18 +151,18 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-hidden relative bg-slate-50/50">
-          
+        <div className="flex-1 relative bg-slate-50/30 rounded-b-[2.5rem] overflow-hidden">
+
           <AnimatePresence mode="wait">
             {processing ? (
-              <motion.div 
+              <motion.div
                 key="processing"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="absolute inset-0 flex flex-col items-center justify-center z-10"
               >
                 <div className="relative w-24 h-24 mb-8">
                   <div className="absolute inset-0 rounded-full border-2 border-indigo-100" />
-                  <motion.div 
+                  <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                     className="absolute inset-0 rounded-full border-t-2 border-indigo-600"
@@ -206,7 +171,7 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                     <Activity size={24} className="text-indigo-600" />
                   </div>
                 </div>
-                
+
                 <div className="h-6 overflow-hidden">
                   <AnimatePresence mode="popLayout">
                     <motion.p
@@ -222,13 +187,13 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                 </div>
               </motion.div>
             ) : (
-              <motion.div 
+              <motion.div
                 key="content"
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="h-full flex flex-col md:flex-row"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="flex flex-col md:flex-row h-full"
               >
                 {/* Sidebar Modes */}
-                <div className="w-full md:w-64 border-r border-slate-200/50 p-6 flex flex-col gap-2 shrink-0 bg-white/30">
+                <div className="w-full md:w-72 border-r border-slate-200/50 p-8 flex flex-col gap-2 shrink-0 bg-white/40">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">Briefing Target</p>
                   {MODES.map((mode) => {
                     const isActive = activeMode === mode.id;
@@ -246,22 +211,19 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                       </button>
                     );
                   })}
-                  
+
                   <div className="mt-auto pt-6 border-t border-slate-200/50">
-                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">Primary Threat</p>
-                     <div className="flex items-start gap-2 px-2">
-                        <Target size={14} className="text-rose-500 mt-0.5 shrink-0" />
-                        <span className="text-xs font-bold text-slate-700 leading-snug">{briefing.primaryThreat}</span>
-                     </div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">Primary Threat</p>
+                    <div className="flex items-start gap-2 px-2">
+                      <Target size={14} className="text-rose-500 mt-0.5 shrink-0" />
+                      <span className="text-xs font-bold text-slate-700 leading-snug">{briefing.primaryThreat}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Briefing Document - ADDED overscroll-contain and scrollbar styling */}
-                <div 
-                  ref={scrollRef}
-                  className="flex-1 overflow-y-auto p-8 space-y-8 scroll-smooth briefing-scroll overscroll-contain"
-                >
-                  
+                {/* Briefing Document */}
+                <div className="flex-1 p-10 space-y-12">
+
                   {/* Summary */}
                   <section>
                     <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-indigo-600 mb-3 flex items-center gap-2">
@@ -282,13 +244,13 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                           const isPrimary = risk.startsWith("PRIMARY:");
                           const isRegional = risk.startsWith("REGIONAL VULNERABILITY:");
                           const text = risk.replace(/^(PRIMARY:|SECONDARY:|REGIONAL VULNERABILITY:)\s*/, '');
-                          
+
                           let icon = <AlertTriangle size={14} className="text-slate-400 shrink-0 mt-0.5" />;
                           if (isPrimary) icon = <AlertTriangle size={14} className="text-rose-500 shrink-0 mt-0.5" />;
                           if (isRegional) icon = <Target size={14} className="text-amber-500 shrink-0 mt-0.5" />;
-                          
+
                           return (
-                            <motion.li 
+                            <motion.li
                               initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
                               key={i} className="flex items-start gap-2.5"
                             >
@@ -305,7 +267,7 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                       <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 mb-4">Recommended Directives</h3>
                       <ul className="space-y-3">
                         {briefing.actions.map((action, i) => (
-                          <motion.li 
+                          <motion.li
                             initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 + 0.2 }}
                             key={i} className="flex items-start gap-2.5 p-3 rounded-xl bg-white border border-slate-200/60 shadow-sm"
                           >
