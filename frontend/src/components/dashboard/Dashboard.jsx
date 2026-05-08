@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Activity, Bell, Calendar, ChevronRight, LayoutDashboard,
-  Home, Settings, TrendingUp, User, Beaker,
-  AlertTriangle, ArrowUpRight, BarChart2, Sparkles, Database
+  Activity, ChevronRight, LayoutDashboard,
+  Home, TrendingUp, User, Beaker,
+  AlertTriangle, ArrowUpRight, Sparkles, Database
 } from 'lucide-react';
 import { DASHBOARD_DATA as INITIAL_DATA } from '../../data/data';
 import { simulateScenario } from '../../utils/intelligenceService';
@@ -97,9 +97,6 @@ const Dashboard = ({ onBack }) => {
           <NavItem icon={LayoutDashboard} label="Insights" active={mode === 'insights'} onClick={() => setMode('insights')} />
           <NavItem icon={Beaker} label="Scenario Lab" active={mode === 'simulator'} onClick={() => setMode('simulator')} />
           <NavItem icon={Database} label="Integration Hub" active={mode === 'integration'} onClick={() => setMode('integration')} />
-          <NavItem icon={BarChart2} label="Analytics" />
-          <NavItem icon={Calendar} label="Schedule" />
-          <NavItem icon={Settings} label="Settings" />
         </nav>
 
         {/* AI Status pill */}
@@ -161,11 +158,6 @@ const Dashboard = ({ onBack }) => {
             <WeatherWidget />
 
             <div className="w-px h-8 bg-slate-200/60" />
-
-            <button className="p-2.5 vision-glass-light rounded-xl text-slate-500 hover:text-slate-800 transition-all relative">
-              <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-blue-600 rounded-full" />
-            </button>
 
             <div className="flex items-center gap-3 p-1.5 pr-4 vision-glass-light rounded-xl cursor-pointer hover:bg-black/5 transition-all">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-md">
