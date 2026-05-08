@@ -1,11 +1,11 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Activity, Bell, Calendar, ChevronRight, LayoutDashboard,
   Home, Settings, TrendingUp, User, Beaker,
   AlertTriangle, ArrowUpRight, BarChart2, Sparkles
 } from 'lucide-react';
-import { DASHBOARD_DATA } from '../../data/data';
+import { DASHBOARD_DATA as INITIAL_DATA } from '../../data/data';
 import { processScenario } from '../../utils/scenarioEngine';
 import ForecastChart from './ForecastChart';
 import KPIOverlay from './KPIOverlay';
@@ -14,8 +14,6 @@ import Recommendations from './Recommendations';
 import DepartmentSection from './DepartmentSection';
 import WeatherWidget from './WeatherWidget';
 import ScenarioSimulator from './ScenarioSimulator';
-
-const DAYS = DASHBOARD_DATA.map((d, i) => ({ label: d.day, index: i }));
 
 const riskConfig = {
   Critical: { badge: 'risk-badge-critical', glow: 'risk-critical', dot: 'bg-red-500' },
@@ -30,11 +28,25 @@ const Dashboard = ({ onBack }) => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState('insights'); // 'insights' | 'simulator'
   const containerRef = useRef(null);
+  const [dashboardData, setDashboardData] = useState(INITIAL_DATA);
+
+  useEffect(() => {
+    fetch('/api/forecast')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDashboardData(data);
+        }
+      })
+      .catch(err => console.error('Failed to fetch ML data:', err));
+  }, []);
+
+  const DAYS = dashboardData.map((d, i) => ({ label: d.day, index: i }));
 
   const baseData = useMemo(() => {
-    const raw = DASHBOARD_DATA?.[selectedDayIndex] ?? DASHBOARD_DATA?.[0] ?? {};
+    const raw = dashboardData?.[selectedDayIndex] ?? dashboardData?.[0] ?? {};
     return processScenario(raw, { weather: 0, crowd: 0, viral: 0, staffing: 0, traffic: 0 });
-  }, [selectedDayIndex]);
+  }, [selectedDayIndex, dashboardData]);
   
   const risk = riskConfig[baseData?.risk] ?? riskConfig.Low;
 
@@ -159,7 +171,7 @@ const Dashboard = ({ onBack }) => {
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:block mr-1">Select Day</span>
             <div className="flex gap-1.5 p-1.5 vision-glass rounded-2xl">
               {DAYS.map(({ label, index }) => {
-                const dayData = DASHBOARD_DATA[index];
+                const dayData = dashboardData[index];
                 const r = riskConfig[dayData?.risk] ?? riskConfig.Low;
                 const isActive = selectedDayIndex === index;
                 return (
@@ -189,7 +201,7 @@ const Dashboard = ({ onBack }) => {
 
         {/* ── Grid Content ── */}
         {mode === 'simulator' ? (
-          <ScenarioSimulator baseData={baseData} allData={DASHBOARD_DATA} selectedDayIndex={selectedDayIndex} />
+          <ScenarioSimulator baseData={baseData} allData={dashboardData} selectedDayIndex={selectedDayIndex} />
         ) : (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start auto-rows-min min-w-0 pb-20">
             {/* LEFT COLUMN: Forecast, Recommendations, Departments */}
@@ -218,7 +230,7 @@ const Dashboard = ({ onBack }) => {
                 {/* Chart */}
                 <div className="h-[320px] w-full min-w-0">
                   <ForecastChart
-                    data={DASHBOARD_DATA ?? []}
+                    data={dashboardData ?? []}
                     selectedIndex={selectedDayIndex}
                   />
                 </div>

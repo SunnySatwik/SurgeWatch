@@ -1,0 +1,114 @@
+{
+  "hospital": "Shivamogga District Hospital",
+  "generated_at": "2026-05-06T23:47:43.979829Z",
+  "forecast": [
+    {
+      "date": "2024-04-25",
+      "day_label": "Thursday",
+      "predicted_volume": 111,
+      "baseline_volume": 111,
+      "surge_probability": 0.05,
+      "risk_level": "LOW",
+      "shap_factors": [
+        {
+          "label": "Normal seasonal baseline",
+          "value": 1.11
+        }
+      ]
+    },
+    {
+      "date": "2024-04-26",
+      "day_label": "Friday",
+      "predicted_volume": 110,
+      "baseline_volume": 110,
+      "surge_probability": 0.05,
+      "risk_level": "LOW",
+      "shap_factors": [
+        {
+          "label": "Normal seasonal baseline",
+          "value": 0.16
+        }
+      ]
+    },
+    {
+      "date": "2024-04-27",
+      "day_label": "Saturday",
+      "predicted_volume": 126,
+      "baseline_volume": 111,
+      "surge_probability": 0.2,
+      "risk_level": "LOW",
+      "shap_factors": [
+        {
+          "label": "Day of week",
+          "value": 10.15
+        }
+      ]
+    },
+    {
+      "date": "2024-04-28",
+      "day_label": "Sunday",
+      "predicted_volume": 120,
+      "baseline_volume": 106,
+      "surge_probability": 0.2,
+      "risk_level": "LOW",
+      "shap_factors": [
+        {
+          "label": "Day of week",
+          "value": 10.41
+        }
+      ]
+    },
+    {
+      "date": "2024-04-29",
+      "day_label": "Monday",
+      "predicted_volume": 105,
+      "baseline_volume": 104,
+      "surge_probability": 0.05,
+      "risk_level": "LOW",
+      "shap_factors": [
+        {
+          "label": "Normal seasonal baseline",
+          "value": 0.77
+        }
+      ]
+    },
+    {
+      "date": "2024-04-30",
+      "day_label": "Tuesday",
+      "predicted_volume": 107,
+      "baseline_volume": 107,
+      "surge_probability": 0.05,
+      "risk_level": "LOW",
+      "shap_factors": [
+        {
+          "label": "Normal seasonal baseline",
+          "value": 0.1
+        }
+      ]
+    },
+    {
+      "date": "2024-05-01",
+      "day_label": "Wednesday",
+      "predicted_volume": 112,
+      "baseline_volume": 111,
+      "surge_probability": 0.05,
+      "risk_level": "LOW",
+      "shap_factors": [
+        {
+          "label": "Normal seasonal baseline",
+          "value": 1.33
+        }
+      ]
+    }
+  ],
+  "departments": [
+    {
+      "name": "Emergency",
+      "risk_level": "MEDIUM"
+    },
+    {
+      "name": "General Ward",
+      "risk_level": "MEDIUM"
+    }
+  ]
+}
