@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Activity, Bell, Calendar, ChevronRight, LayoutDashboard,
   Home, Settings, TrendingUp, User, Beaker,
-  AlertTriangle, ArrowUpRight, BarChart2, Sparkles
+  AlertTriangle, ArrowUpRight, BarChart2, Sparkles, Database
 } from 'lucide-react';
 import { DASHBOARD_DATA as INITIAL_DATA } from '../../data/data';
 import { simulateScenario } from '../../utils/intelligenceService';
@@ -14,6 +14,7 @@ import Recommendations from './Recommendations';
 import DepartmentSection from './DepartmentSection';
 import WeatherWidget from './WeatherWidget';
 import ScenarioSimulator from './ScenarioSimulator';
+import IntegrationHub from './IntegrationHub';
 
 const riskConfig = {
   Critical: { badge: 'risk-badge-critical', glow: 'risk-critical', dot: 'bg-red-500' },
@@ -95,7 +96,7 @@ const Dashboard = ({ onBack }) => {
         <nav className="flex-1 w-full px-3 space-y-1.5">
           <NavItem icon={LayoutDashboard} label="Insights" active={mode === 'insights'} onClick={() => setMode('insights')} />
           <NavItem icon={Beaker} label="Scenario Lab" active={mode === 'simulator'} onClick={() => setMode('simulator')} />
-          <NavItem icon={TrendingUp} label="Forecast" />
+          <NavItem icon={Database} label="Integration Hub" active={mode === 'integration'} onClick={() => setMode('integration')} />
           <NavItem icon={BarChart2} label="Analytics" />
           <NavItem icon={Calendar} label="Schedule" />
           <NavItem icon={Settings} label="Settings" />
@@ -103,17 +104,23 @@ const Dashboard = ({ onBack }) => {
 
         {/* AI Status pill */}
         <div className="hidden md:flex px-5 mb-4 w-full">
-          <div className={`w-full px-4 py-3 rounded-2xl border flex items-center gap-3 transition-colors ${mode === 'simulator' ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'}`}>
+          <div className={`w-full px-4 py-3 rounded-2xl border flex items-center gap-3 transition-colors 
+            ${mode === 'simulator' ? 'bg-amber-50 border-amber-100' : 
+              mode === 'integration' ? 'bg-blue-50 border-blue-100' : 'bg-emerald-50 border-emerald-100'}`}>
             <div className="relative w-2.5 h-2.5">
-              <div className={`absolute inset-0 rounded-full animate-ping ${mode === 'simulator' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-              <div className={`w-2.5 h-2.5 rounded-full relative ${mode === 'simulator' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+              <div className={`absolute inset-0 rounded-full animate-ping 
+                ${mode === 'simulator' ? 'bg-amber-500' : mode === 'integration' ? 'bg-blue-500' : 'bg-emerald-500'}`} />
+              <div className={`w-2.5 h-2.5 rounded-full relative 
+                ${mode === 'simulator' ? 'bg-amber-500' : mode === 'integration' ? 'bg-blue-500' : 'bg-emerald-500'}`} />
             </div>
             <div>
-              <p className={`text-[10px] font-black uppercase tracking-widest ${mode === 'simulator' ? 'text-amber-700' : 'text-emerald-700'}`}>
-                {mode === 'simulator' ? 'Sim Engine' : 'Model Live'}
+              <p className={`text-[10px] font-black uppercase tracking-widest 
+                ${mode === 'simulator' ? 'text-amber-700' : mode === 'integration' ? 'text-blue-700' : 'text-emerald-700'}`}>
+                {mode === 'simulator' ? 'Sim Engine' : mode === 'integration' ? 'Data Sync' : 'Model Live'}
               </p>
-              <p className={`text-[9px] font-medium ${mode === 'simulator' ? 'text-amber-600' : 'text-emerald-600'}`}>
-                v2.4 · {baseData?.confidence}% acc.
+              <p className={`text-[9px] font-medium 
+                ${mode === 'simulator' ? 'text-amber-600' : mode === 'integration' ? 'text-blue-600' : 'text-emerald-600'}`}>
+                {mode === 'integration' ? 'All systems active' : `v2.4 · ${baseData?.confidence}% acc.`}
               </p>
             </div>
           </div>
@@ -136,13 +143,15 @@ const Dashboard = ({ onBack }) => {
           <div className="flex items-center gap-5">
             <div>
               <h1 className="text-xl font-display font-bold text-slate-800 tracking-tight">
-                {mode === 'simulator' ? 'Predictive Scenario Lab' : 'Intelligence Hub'}
+                {mode === 'simulator' ? 'Predictive Scenario Lab' : mode === 'integration' ? 'System Integration Hub' : 'Intelligence Hub'}
               </h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Week 19 · May 2026</span>
                 <span className="text-slate-200">·</span>
-                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors ${mode === 'simulator' ? 'bg-amber-100/50 text-amber-700 border border-amber-200/60' : risk.badge}`}>
-                  {mode === 'simulator' ? 'Simulation Environment' : `${baseData?.risk ?? 'Low'} Risk Day`}
+                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors 
+                  ${mode === 'simulator' ? 'bg-amber-100/50 text-amber-700 border border-amber-200/60' : 
+                    mode === 'integration' ? 'bg-blue-100/50 text-blue-700 border border-blue-200/60' : risk.badge}`}>
+                  {mode === 'simulator' ? 'Simulation Environment' : mode === 'integration' ? 'Infrastructure Layer' : `${baseData?.risk ?? 'Low'} Risk Day`}
                 </span>
               </div>
             </div>
@@ -170,8 +179,8 @@ const Dashboard = ({ onBack }) => {
           </div>
         </header>
 
-        {/* ── Day Selector (Hidden in Simulator) ── */}
-        {mode !== 'simulator' && (
+        {/* ── Day Selector (Hidden in Simulator and Integration Hub) ── */}
+        {mode === 'insights' && (
           <div className="flex items-center gap-2 mb-5 shrink-0">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:block mr-1">Select Day</span>
             <div className="flex gap-1.5 p-1.5 vision-glass rounded-2xl">
@@ -205,7 +214,9 @@ const Dashboard = ({ onBack }) => {
         )}
 
         {/* ── Grid Content ── */}
-        {mode === 'simulator' ? (
+        {mode === 'integration' ? (
+          <IntegrationHub />
+        ) : mode === 'simulator' ? (
           <ScenarioSimulator baseData={baseData} allData={dashboardData} selectedDayIndex={selectedDayIndex} />
         ) : (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start auto-rows-min min-w-0 pb-20">
