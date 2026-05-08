@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Activity, ChevronRight, LayoutDashboard,
-  Home, TrendingUp, User, Beaker,
+  Activity, LayoutDashboard,
+  Home, User, Beaker,
   AlertTriangle, ArrowUpRight, Sparkles, Database
 } from 'lucide-react';
 import { DASHBOARD_DATA as INITIAL_DATA } from '../../data/data';
+import {
+  getRollingWeek,
+  getSelectedDayContext,
+  getLiveOperationalLabel,
+  getModeTitle,
+  TEST_MODE_SHORTCUT,
+} from '../../utils/temporalEngine';
 import { simulateScenario } from '../../utils/intelligenceService';
 import ForecastChart from './ForecastChart';
 import KPIOverlay from './KPIOverlay';
@@ -25,12 +32,34 @@ const riskConfig = {
 };
 
 const Dashboard = ({ onBack }) => {
-  const [selectedDayIndex, setSelectedDayIndex] = useState(2);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [mode, setMode] = useState('insights'); // 'insights' | 'simulator'
+  const [mode, setMode] = useState('insights'); // 'insights' | 'simulator' | 'integration'
   const containerRef = useRef(null);
   const [dashboardData, setDashboardData] = useState(INITIAL_DATA);
   const [baseData, setBaseData] = useState(null);
+  // Dev test mode — frozen telemetry + deterministic state
+  const [testMode, setTestMode] = useState(false);
+
+  // ── Rolling 7-day window derived once per render ──
+  const rollingWeek = useMemo(() => getRollingWeek(), []);
+  const selectedDayCtx = useMemo(
+    () => getSelectedDayContext(rollingWeek, selectedDayIndex),
+    [rollingWeek, selectedDayIndex]
+  );
+  const liveLabel = useMemo(() => getLiveOperationalLabel(), []);
+
+  // ── Dev test mode shortcut: Ctrl+Shift+T ──
+  useEffect(() => {
+    const handler = (e) => {
+      if (TEST_MODE_SHORTCUT(e)) {
+        e.preventDefault();
+        setTestMode(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   useEffect(() => {
     fetch('/api/forecast')
@@ -44,7 +73,9 @@ const Dashboard = ({ onBack }) => {
   }, []);
 
   useEffect(() => {
-    const raw = dashboardData?.[selectedDayIndex] ?? dashboardData?.[0];
+    // dataIndex wraps rolling-week index into available ML data length
+    const dataIndex = dashboardData.length > 0 ? selectedDayIndex % dashboardData.length : 0;
+    const raw = dashboardData?.[dataIndex] ?? dashboardData?.[0];
     if (raw) {
       simulateScenario(raw, { weather: 0, crowd: 0, viral: 0, staffing: 0, traffic: 0 })
         .then(data => setBaseData(data))
@@ -52,7 +83,15 @@ const Dashboard = ({ onBack }) => {
     }
   }, [selectedDayIndex, dashboardData]);
 
-  const DAYS = dashboardData.map((d, i) => ({ label: d.day, index: i }));
+  // Map rolling week onto dashboard data (cycles through available ML days)
+  const DAYS = rollingWeek.map((dayCtx, i) => ({
+    label: dayCtx.dayShort,
+    dateLabel: dayCtx.dateLabel,
+    isToday: dayCtx.isToday,
+    index: i,
+    // ML data index wraps if fewer than 7 days returned from backend
+    dataIndex: i % dashboardData.length,
+  }));
   
   const risk = riskConfig[baseData?.risk] ?? riskConfig.Low;
 
@@ -140,15 +179,17 @@ const Dashboard = ({ onBack }) => {
           <div className="flex items-center gap-5">
             <div>
               <h1 className="text-xl font-display font-bold text-slate-800 tracking-tight">
-                {mode === 'simulator' ? 'Predictive Scenario Lab' : mode === 'integration' ? 'System Integration Hub' : 'Intelligence Hub'}
+                {getModeTitle(mode)}
               </h1>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Week 19 · May 2026</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  {mode === 'insights' ? liveLabel : mode === 'simulator' ? 'Scenario Modeling Active' : 'Infrastructure Layer'}
+                </span>
                 <span className="text-slate-200">·</span>
                 <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors 
                   ${mode === 'simulator' ? 'bg-amber-100/50 text-amber-700 border border-amber-200/60' : 
                     mode === 'integration' ? 'bg-blue-100/50 text-blue-700 border border-blue-200/60' : risk.badge}`}>
-                  {mode === 'simulator' ? 'Simulation Environment' : mode === 'integration' ? 'Infrastructure Layer' : `${baseData?.risk ?? 'Low'} Risk Day`}
+                  {mode === 'simulator' ? 'Simulation Environment' : mode === 'integration' ? 'Infrastructure Layer' : `${baseData?.risk ?? 'Low'} Risk · ${selectedDayCtx.operationalLabel}`}
                 </span>
               </div>
             </div>
@@ -174,22 +215,23 @@ const Dashboard = ({ onBack }) => {
         {/* ── Day Selector (Hidden in Simulator and Integration Hub) ── */}
         {mode === 'insights' && (
           <div className="flex items-center gap-2 mb-5 shrink-0">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:block mr-1">Select Day</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:block mr-1">Forecast Window</span>
             <div className="flex gap-1.5 p-1.5 vision-glass rounded-2xl">
-              {DAYS.map(({ label, index }) => {
-                const dayData = dashboardData[index];
+              {DAYS.map(({ label, dateLabel, isToday, index, dataIndex }) => {
+                const dayData = dashboardData[dataIndex];
                 const r = riskConfig[dayData?.risk] ?? riskConfig.Low;
                 const isActive = selectedDayIndex === index;
                 return (
                   <button
-                    key={label}
+                    key={index}
                     onClick={() => setSelectedDayIndex(index)}
                     className={`relative px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center gap-0.5 ${isActive
                       ? 'bg-white text-slate-800 shadow-md shadow-blue-500/10'
                       : 'text-slate-400 hover:text-slate-700 hover:bg-white/50'
                       }`}
+                    title={dateLabel}
                   >
-                    <span>{label}</span>
+                    <span>{isToday ? 'Today' : label}</span>
                     <span className={`w-1.5 h-1.5 rounded-full ${isActive ? r.dot : 'bg-slate-200'}`} />
                   </button>
                 );
@@ -207,9 +249,9 @@ const Dashboard = ({ onBack }) => {
 
         {/* ── Grid Content ── */}
         {mode === 'integration' ? (
-          <IntegrationHub operationalState={baseData} />
+          <IntegrationHub operationalState={baseData} testMode={testMode} />
         ) : mode === 'simulator' ? (
-          <ScenarioSimulator baseData={baseData} allData={dashboardData} selectedDayIndex={selectedDayIndex} />
+          <ScenarioSimulator baseData={baseData} allData={dashboardData} selectedDayIndex={selectedDayIndex} selectedDayCtx={selectedDayCtx} />
         ) : (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start auto-rows-min min-w-0 pb-20">
             {/* LEFT COLUMN: Forecast, Recommendations, Departments */}
@@ -231,7 +273,7 @@ const Dashboard = ({ onBack }) => {
                       <AlertTriangle size={12} />
                       {baseData?.risk ?? 'Low'} Risk
                     </div>
-                    <p className="text-[9px] text-slate-400 font-medium">{baseData?.date}</p>
+                    <p className="text-[9px] text-slate-400 font-medium">{selectedDayCtx.operationalLabel}</p>
                   </div>
                 </div>
 
@@ -290,10 +332,18 @@ const Dashboard = ({ onBack }) => {
             <div className="vision-glass px-6 py-3 rounded-2xl flex items-center gap-6 shadow-2xl shadow-slate-900/10">
               <div className="flex items-center gap-2.5">
                 <div className={`w-2 h-2 rounded-full ${risk.dot} animate-pulse`} />
-                <span className="text-xs font-bold text-slate-700">{baseData?.risk ?? 'Low'} Surge · {baseData?.date}</span>
+                <span className="text-xs font-bold text-slate-700">{baseData?.risk ?? 'Low'} Surge · {selectedDayCtx.operationalLabel}</span>
               </div>
               <div className="w-px h-5 bg-slate-200" />
               <span className="text-xs font-mono font-bold text-emerald-600">{baseData?.confidence ?? 0}% model confidence</span>
+              {testMode && (
+                <>
+                  <div className="w-px h-5 bg-slate-200" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md animate-pulse">
+                    ⚙ Test Mode
+                  </span>
+                </>
+              )}
               <div className="w-px h-5 bg-slate-200" />
               <button className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
                 Run Protocols <ArrowUpRight size={12} />

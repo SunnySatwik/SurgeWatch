@@ -92,14 +92,22 @@ router.get('/', (req, res) => {
         const rawData = fs.readFileSync(mlDataPath, 'utf8');
         const mlOutput = JSON.parse(rawData);
 
-        // Transform the forecast array into the format expected by DASHBOARD_DATA
+        // Transform the forecast array into the format expected by DASHBOARD_DATA.
+        // Dates are rolled forward so day-0 always anchors to today, regardless
+        // of when the ML model was last trained / the JSON was generated.
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         const dashboardData = mlOutput.forecast.map((dayData, index) => {
-            const dateObj = new Date(dayData.date);
-            const dayStr = dateObj.toLocaleDateString('en-US', { weekday: 'short' }); // "Mon", "Tue"
-            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); // "May 1"
-            
+            // Anchor each entry to today + index days (rolling forecast window)
+            const anchoredDate = new Date(today);
+            anchoredDate.setDate(today.getDate() + index);
+
+            const dayStr  = anchoredDate.toLocaleDateString('en-US', { weekday: 'short' }); // "Thu"
+            const dateStr = anchoredDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); // "May 8"
+
             const riskAttrs = getRiskAttributes(dayData.risk_level);
-            
+
             // Map SHAP factors
             // In ML, positive values increase patients (so they are "negative" health outcomes)
             const shapMapped = dayData.shap_factors.map(sf => ({
@@ -108,10 +116,11 @@ router.get('/', (req, res) => {
                 type: sf.value > 0 ? 'negative' : 'positive'
             }));
 
-            // Calculate confidence
-            // e.g. surge_probability of 0.85 -> 85% confidence? Actually we can use a high random number or static high number
-            // since XGBoost output doesn't give a direct "confidence" metric, we'll simulate 90-98
-            const confidence = 90 + Math.floor(Math.random() * 9); 
+            // Confidence derived from surge_probability with bounded mapping.
+            // XGBoost regression does not emit calibrated confidence directly;
+            // surge_probability [0,1] maps onto display range [72,97].
+            const surgeProb = dayData.surge_probability ?? 0.5;
+            const confidence = Math.round(72 + surgeProb * 25);
 
             // Calculate load percentage
             let load = Math.round((dayData.predicted_volume / (dayData.baseline_volume * 1.5)) * 100);

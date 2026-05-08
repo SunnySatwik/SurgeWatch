@@ -78,7 +78,7 @@ const ComparisonMetric = ({ label, baseline, simulated, unit, invertAlert }) => 
   );
 };
 
-const ScenarioSimulator = ({ baseData }) => {
+const ScenarioSimulator = ({ baseData, selectedDayCtx }) => {
   const [draft, setDraft] = useState(PRESETS[0].config);
   const [active, setActive] = useState(PRESETS[0].config);
   const [simulatedData, setSimulatedData] = useState(null);
@@ -304,7 +304,7 @@ const ScenarioSimulator = ({ baseData }) => {
                  <Clock size={16} className="text-indigo-500" />
                  <h3 className="text-sm font-display font-bold text-slate-800">Operational Timeline</h3>
                  <span className="ml-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                   Next 8 Hours Projected
+                   {selectedDayCtx ? `${selectedDayCtx.operationalLabel} · 8h Projection` : 'Next 8 Hours Projected'}
                  </span>
                </div>
 

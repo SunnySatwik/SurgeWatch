@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Database, Activity, Server, Radio, Link2, 
   CloudRain, Users, FlaskConical, Pill, Globe,
-  ArrowRight, ShieldCheck, Zap, CheckCircle2, Clock
+  ArrowRight, ShieldCheck, Zap, CheckCircle2, Clock, PauseCircle
 } from 'lucide-react';
 import { generateTelemetryEvent, generateInitialEvents } from '../../utils/telemetryEngine';
+import { getLiveOperationalLabel } from '../../utils/temporalEngine';
 
 const INITIAL_CARDS = [
   { id: 'ehr', title: "EHR Feed", icon: Database, latency: 12, state: "Active", color: "text-blue-500", bg: "bg-blue-50" },
@@ -23,12 +24,45 @@ const INTEROPERABILITY_TAGS = [
   "Secure Sync", "Signal Redundancy", "Edge Failover"
 ];
 
-const REGIONAL_SIGNALS = [
-  { label: "BMTC Traffic Density", value: "High / ORR Gridlock", status: "warning" },
-  { label: "Rainfall Telemetry", value: "12mm/hr (Indiranagar)", status: "info" },
-  { label: "District Viral Trends", value: "Elevated Respiratory", status: "warning" },
-  { label: "Event Density", value: "Nominal (Chinnaswamy)", status: "success" }
-];
+// Derive regional signals from live operational conditions instead of hardcoded strings
+const deriveRegionalSignals = (operationalState) => {
+  const cond = operationalState?.intelligence?.conditions ?? {};
+  const metrics = operationalState?.metrics ?? {};
+
+  const trafficStatus = cond.ambulanceFlow === 'critical intake compression' ? 'warning'
+    : cond.ambulanceFlow === 'degraded' ? 'warning' : 'success';
+  const trafficValue = cond.ambulanceFlow === 'critical intake compression'
+    ? 'Critical / ORR + Silk Board gridlock'
+    : cond.ambulanceFlow === 'degraded'
+    ? 'Elevated / ORR congestion'
+    : 'Normal / All corridors clear';
+
+  const rainfallStatus = cond.ambulanceFlow?.includes('flooding') || cond.regionalContext?.includes('Monsoon') ? 'warning' : 'info';
+  const rainfallValue = operationalState ? `${metrics.delayRisk ?? 0}% delay risk index` : 'No active alerts';
+
+  const viralStatus = cond.isolationCapacity === 'exhausted' || cond.respiratoryPressure === 'critical surge strain'
+    ? 'warning' : cond.respiratoryPressure === 'elevated syndromic pressure' ? 'warning' : 'success';
+  const viralValue = cond.isolationCapacity === 'exhausted'
+    ? 'Critical Respiratory Surge'
+    : cond.respiratoryPressure === 'elevated syndromic pressure'
+    ? 'Elevated Respiratory'
+    : 'Within Baseline';
+
+  const eventStatus = cond.traumaVelocity === 'high-velocity volatility' ? 'warning'
+    : cond.traumaVelocity === 'elevated presentation rate' ? 'warning' : 'success';
+  const eventValue = cond.traumaVelocity === 'high-velocity volatility'
+    ? 'Mass Gathering / High Trauma Risk'
+    : cond.traumaVelocity === 'elevated presentation rate'
+    ? 'Event Active / Moderate Risk'
+    : 'Nominal';
+
+  return [
+    { label: 'Traffic Density',       value: trafficValue, status: trafficStatus },
+    { label: 'Transit Delay Index',   value: rainfallValue, status: rainfallStatus },
+    { label: 'District Viral Trends', value: viralValue,   status: viralStatus },
+    { label: 'Event / Crowd Density', value: eventValue,   status: eventStatus },
+  ];
+};
 
 const ConnectivityCard = ({ data, index }) => (
   <motion.div 
@@ -111,12 +145,16 @@ const AnimatedArrow = ({ delay }) => (
   </div>
 );
 
-const IntegrationHub = ({ operationalState }) => {
+const IntegrationHub = ({ operationalState, testMode = false }) => {
   // Seed events from the engine so initial load is already context-aware
   const [events, setEvents] = useState(() => generateInitialEvents(operationalState));
   const [cards, setCards] = useState(INITIAL_CARDS);
   // Stable ref to the last event — avoids the interval closure capturing stale state
   const lastEventRef = useRef(null);
+  // Live label (updates once per mount — no interval needed for the label itself)
+  const liveLabel = getLiveOperationalLabel();
+  // Dynamic regional signals derived from the operational state
+  const regionalSignals = deriveRegionalSignals(operationalState);
 
   // Re-seed event stream whenever operational state meaningfully changes
   useEffect(() => {
@@ -127,8 +165,9 @@ const IntegrationHub = ({ operationalState }) => {
     operationalState?.intelligence?.conditions?.isolationCapacity,
   ]);
 
-  // Context-aware live telemetry generator
+  // Context-aware live telemetry generator — paused in test mode
   useEffect(() => {
+    if (testMode) return; // freeze when test mode is active
     let timeout;
     const schedule = () => {
       // Variable interval: 4–9 seconds, longer when stable
@@ -149,10 +188,11 @@ const IntegrationHub = ({ operationalState }) => {
     };
     schedule();
     return () => clearTimeout(timeout);
-  }, []);
+  }, [testMode]); // re-bind only when testMode toggles
 
-  // Connectivity Cards Dynamics
+  // Connectivity Cards Dynamics — paused in test mode
   useEffect(() => {
+    if (testMode) return; // freeze when test mode is active
     const cardsInterval = setInterval(() => {
       setCards(prevCards => prevCards.map(card => {
         // Fluctuate latency slightly (-5 to +5 ms)
@@ -174,7 +214,7 @@ const IntegrationHub = ({ operationalState }) => {
     }, 3000); // Every 3 seconds
 
     return () => clearInterval(cardsInterval);
-  }, []);
+  }, [testMode]); // re-bind only when testMode toggles
 
   return (
     <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 min-w-0 pb-20 font-sans">
@@ -261,11 +301,11 @@ const IntegrationHub = ({ operationalState }) => {
           <div className="flex items-center gap-2 mb-5 relative z-10">
             <Globe size={16} className="text-blue-500" />
             <h3 className="text-sm font-display font-bold text-slate-800">Regional Signals</h3>
-            <span className="ml-auto text-[9px] font-bold text-slate-400 uppercase tracking-widest">Bengaluru</span>
+            <span className="ml-auto text-[9px] font-bold text-slate-400 uppercase tracking-widest">{liveLabel}</span>
           </div>
           
           <div className="space-y-3 relative z-10">
-            {REGIONAL_SIGNALS.map((sig, i) => (
+            {regionalSignals.map((sig, i) => (
               <div key={i} className="flex flex-col gap-1 p-3 rounded-xl bg-slate-50/50 border border-slate-100">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{sig.label}</span>
                 <div className="flex items-center gap-2">
@@ -289,7 +329,13 @@ const IntegrationHub = ({ operationalState }) => {
           <div className="flex items-center gap-2 mb-5 shrink-0">
             <Radio size={16} className="text-rose-500 animate-pulse" />
             <h3 className="text-sm font-display font-bold text-slate-800">Live Telemetry Stream</h3>
-            <div className="ml-auto flex gap-1">
+            <div className="ml-auto flex items-center gap-2">
+              {testMode && (
+                <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <PauseCircle size={9} /> Frozen
+                </span>
+              )}
+               <div className="flex gap-1">
                {/* Small animated equalizer bars */}
                {[1, 2, 3].map((bar) => (
                  <motion.div 
@@ -299,6 +345,7 @@ const IntegrationHub = ({ operationalState }) => {
                    className="w-1 bg-rose-400/50 rounded-full"
                  />
                ))}
+               </div>
             </div>
           </div>
           
