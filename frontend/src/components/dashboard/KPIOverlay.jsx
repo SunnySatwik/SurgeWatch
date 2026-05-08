@@ -40,7 +40,8 @@ const KPIOverlay = ({ data }) => {
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="label-meta mb-1">Capacity Load</p>
+          <p className="label-meta mb-0.5">Capacity Load</p>
+          <p className="text-[9px] text-slate-400 font-medium leading-tight mb-2">Aggregate inpatient bed utilization rate</p>
           <p className="text-3xl font-mono font-bold text-slate-800 tracking-tight mb-2">{load}%</p>
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-500">7-day trend</span>
@@ -77,7 +78,8 @@ const KPIOverlay = ({ data }) => {
           </div>
           <span className="text-xs font-semibold bg-rose-50 text-rose-600 px-2.5 py-0.5 rounded-full border border-rose-100">+12 est.</span>
         </div>
-        <p className="label-meta mb-1">Expected Patients</p>
+        <p className="label-meta mb-0.5">Expected Patients</p>
+        <p className="text-[9px] text-slate-400 font-medium leading-tight mb-2">Projected 24h admissions volume</p>
         <motion.p
           key={patients}
           initial={{ opacity: 0, y: 4 }}
@@ -95,7 +97,8 @@ const KPIOverlay = ({ data }) => {
           </div>
           <TrendingUp size={14} className="text-emerald-500" />
         </div>
-        <p className="label-meta mb-1">AI Confidence</p>
+        <p className="label-meta mb-0.5">AI Confidence</p>
+        <p className="text-[9px] text-slate-400 font-medium leading-tight mb-2">Model reliability based on signal noise</p>
         <motion.p
           key={confidence}
           initial={{ opacity: 0, y: 4 }}

@@ -25,4 +25,27 @@ router.post('/simulate', (req, res) => {
     }
 });
 
+/**
+ * @route   POST /api/intelligence/briefing
+ * @desc    Generate structured executive briefing data
+ * @access  Public
+ */
+router.post('/briefing', (req, res) => {
+    try {
+        const { simData, scenario, mode } = req.body;
+
+        if (!simData || !scenario || !mode) {
+            return res.status(400).json({ 
+                error: 'Missing required parameters: simData, scenario, and mode' 
+            });
+        }
+
+        const briefing = intelligenceEngine.generateBriefingData(simData, scenario, mode);
+        res.json(briefing);
+    } catch (error) {
+        console.error('Briefing Generation Error:', error);
+        res.status(500).json({ error: 'Failed to generate executive briefing' });
+    }
+});
+
 module.exports = router;

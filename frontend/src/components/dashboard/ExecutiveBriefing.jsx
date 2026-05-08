@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Play, FileText, Activity, AlertTriangle, ArrowRight, ShieldAlert, HeartPulse, Shield, BarChart3, Square, Target } from 'lucide-react';
-import { generateBriefingData } from '../../utils/scenarioEngine';
+import { generateBriefing } from '../../utils/intelligenceService';
 
 const MODES = [
   { id: 'executive', label: 'Executive', icon: BarChart3 },
@@ -38,6 +38,7 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
   const [processing, setProcessing] = useState(true);
   const [stepIndex, setStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [briefing, setBriefing] = useState(null);
 
   useEffect(() => {
     // Prevent background scrolling while modal is active
@@ -63,10 +64,18 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
     return () => clearInterval(interval);
   }, [processing]);
 
-  const briefing = React.useMemo(() => generateBriefingData(simulatedData, scenario, activeMode), [simulatedData, scenario, activeMode]);
+  useEffect(() => {
+    // Fetch briefing whenever mode, simulatedData or scenario changes
+    const fetchBriefing = async () => {
+      if (!simulatedData) return;
+      const data = await generateBriefing(simulatedData, scenario, activeMode);
+      setBriefing(data);
+    };
+    fetchBriefing();
+  }, [simulatedData, scenario, activeMode]);
 
   const handlePlay = () => {
-    if (!('speechSynthesis' in window)) return;
+    if (!('speechSynthesis' in window) || !briefing) return;
 
     if (isPlaying) {
       window.speechSynthesis.cancel();
@@ -128,7 +137,7 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
               <h2 className="text-lg font-display font-bold text-slate-800 tracking-tight">AI Executive Briefing</h2>
               <div className="flex items-center gap-3 mt-1">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Intelligence Report</p>
-                {!processing && <EscalationBadge level={briefing.escalation} />}
+                {!processing && briefing && <EscalationBadge level={briefing.escalation} />}
               </div>
             </div>
           </div>
@@ -186,7 +195,7 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                   </AnimatePresence>
                 </div>
               </motion.div>
-            ) : (
+            ) : briefing ? (
               <motion.div
                 key="content"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -303,7 +312,7 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
 
                 </div>
               </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </div>
       </motion.div>

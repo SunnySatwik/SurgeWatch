@@ -258,13 +258,28 @@ const ScenarioSimulator = ({ baseData }) => {
                     )}
                   </AnimatePresence>
 
-                  <ComparisonMetric label="Operational Stress Index" baseline={baselineMetrics.osi} simulated={activeMetrics.osi} unit="" invertAlert={false} />
-                  <ComparisonMetric label="Surge Probability" baseline={baselineMetrics.surgeProb} simulated={activeMetrics.surgeProb} unit="%" invertAlert={false} />
-                  <ComparisonMetric label="Ambulance Delay Risk" baseline={baselineMetrics.delayRisk} simulated={activeMetrics.delayRisk} unit="%" invertAlert={false} />
+                  <ComparisonMetric 
+                    label="Operational Stress Index" 
+                    description="Real-time aggregate clinical system pressure"
+                    baseline={baselineMetrics.osi} simulated={activeMetrics.osi} unit="" invertAlert={false} 
+                  />
+                  <ComparisonMetric 
+                    label="Surge Probability" 
+                    description="Likelihood of exceeding standard intake bounds"
+                    baseline={baselineMetrics.surgeProb} simulated={activeMetrics.surgeProb} unit="%" invertAlert={false} 
+                  />
+                  <ComparisonMetric 
+                    label="Ambulance Delay Risk" 
+                    description="Projected emergency transfer disruption probability"
+                    baseline={baselineMetrics.delayRisk} simulated={activeMetrics.delayRisk} unit="%" invertAlert={false} 
+                  />
                   
                   {/* Custom ICU Metric without numerical diff */}
                   <div className="vision-glass-light p-4 rounded-2xl border border-white/60 shadow-sm relative overflow-hidden group">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">ICU Saturation Window</p>
+                    <div className="mb-4">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">ICU Saturation Window</p>
+                      <p className="text-[9px] text-slate-400 font-medium leading-tight mt-0.5">Estimated time until critical bed saturation</p>
+                    </div>
                     <div className="flex items-end justify-between">
                       <span className="text-3xl font-mono font-bold text-slate-800 tracking-tighter">
                         {activeMetrics.icuWindow}
