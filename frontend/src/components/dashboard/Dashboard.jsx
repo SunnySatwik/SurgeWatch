@@ -6,7 +6,7 @@ import {
   AlertTriangle, ArrowUpRight, BarChart2, Sparkles
 } from 'lucide-react';
 import { DASHBOARD_DATA as INITIAL_DATA } from '../../data/data';
-import { processScenario } from '../../utils/scenarioEngine';
+import { simulateScenario } from '../../utils/intelligenceService';
 import ForecastChart from './ForecastChart';
 import KPIOverlay from './KPIOverlay';
 import SHAPPanel from './SHAPPanel';
@@ -29,6 +29,7 @@ const Dashboard = ({ onBack }) => {
   const [mode, setMode] = useState('insights'); // 'insights' | 'simulator'
   const containerRef = useRef(null);
   const [dashboardData, setDashboardData] = useState(INITIAL_DATA);
+  const [baseData, setBaseData] = useState(null);
 
   useEffect(() => {
     fetch('/api/forecast')
@@ -41,12 +42,16 @@ const Dashboard = ({ onBack }) => {
       .catch(err => console.error('Failed to fetch ML data:', err));
   }, []);
 
-  const DAYS = dashboardData.map((d, i) => ({ label: d.day, index: i }));
-
-  const baseData = useMemo(() => {
-    const raw = dashboardData?.[selectedDayIndex] ?? dashboardData?.[0] ?? {};
-    return processScenario(raw, { weather: 0, crowd: 0, viral: 0, staffing: 0, traffic: 0 });
+  useEffect(() => {
+    const raw = dashboardData?.[selectedDayIndex] ?? dashboardData?.[0];
+    if (raw) {
+      simulateScenario(raw, { weather: 0, crowd: 0, viral: 0, staffing: 0, traffic: 0 })
+        .then(data => setBaseData(data))
+        .catch(err => console.error('Failed to simulate baseline:', err));
+    }
   }, [selectedDayIndex, dashboardData]);
+
+  const DAYS = dashboardData.map((d, i) => ({ label: d.day, index: i }));
   
   const risk = riskConfig[baseData?.risk] ?? riskConfig.Low;
 

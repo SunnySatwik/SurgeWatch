@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, CloudLightning, Users, ThermometerSun, ShieldAlert, Ambulance, Activity, Play, CheckCircle2, ChevronRight, TrendingUp, AlertTriangle, Zap, Clock, FileText } from 'lucide-react';
 import ExecutiveBriefing from './ExecutiveBriefing';
-import { processScenario, getBaselineMetrics } from '../../utils/scenarioEngine';
+import { getBaselineMetrics } from '../../utils/scenarioEngine';
+import { simulateScenario } from '../../utils/intelligenceService';
 
 const PRESETS = [
   { name: 'Baseline', config: { weather: 0, crowd: 0, viral: 0, staffing: 0, traffic: 0 } },
@@ -80,33 +81,49 @@ const ComparisonMetric = ({ label, baseline, simulated, unit, invertAlert }) => 
 const ScenarioSimulator = ({ baseData }) => {
   const [draft, setDraft] = useState(PRESETS[0].config);
   const [active, setActive] = useState(PRESETS[0].config);
+  const [simulatedData, setSimulatedData] = useState(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
 
   const baselineMetrics = useMemo(() => getBaselineMetrics(), []);
   
-  // Use Centralized Engine
-  const activeSimulatedData = useMemo(() => processScenario(baseData, active), [baseData, active]);
-  const activeMetrics = activeSimulatedData.metrics;
-  const activeTimeline = activeSimulatedData.timeline;
+  // Initialize simulatedData with baseData if null
+  useEffect(() => {
+    if (!simulatedData && baseData) {
+      setSimulatedData(baseData);
+    }
+  }, [baseData, simulatedData]);
+
+  const activeMetrics = simulatedData?.metrics || baseData?.metrics || baselineMetrics;
+  const activeTimeline = simulatedData?.timeline || baseData?.timeline || [];
 
   const hasDraftChanges = JSON.stringify(draft) !== JSON.stringify(active);
 
-  const handleRunSimulation = () => {
+  const handleRunSimulation = async () => {
     setIsSimulating(true);
-    setTimeout(() => {
+    try {
+      const result = await simulateScenario(baseData, draft);
+      setSimulatedData(result);
       setActive(draft);
+    } catch (err) {
+      console.error("Simulation failed", err);
+    } finally {
       setIsSimulating(false);
-    }, 1200);
+    }
   };
 
-  const applyPreset = (preset) => {
+  const applyPreset = async (preset) => {
     setDraft(preset.config);
     setIsSimulating(true);
-    setTimeout(() => {
+    try {
+      const result = await simulateScenario(baseData, preset.config);
+      setSimulatedData(result);
       setActive(preset.config);
+    } catch (err) {
+      console.error("Preset application failed", err);
+    } finally {
       setIsSimulating(false);
-    }, 800);
+    }
   };
 
   return (
@@ -320,7 +337,7 @@ const ScenarioSimulator = ({ baseData }) => {
         {showBriefing && (
           <ExecutiveBriefing 
             scenario={active}
-            simulatedData={activeSimulatedData}
+            simulatedData={simulatedData || baseData}
             onClose={() => setShowBriefing(false)} 
           />
         )}
