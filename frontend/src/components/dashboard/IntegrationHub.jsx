@@ -1,19 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Database, Activity, Server, Radio, Link2, 
   CloudRain, Users, FlaskConical, Pill, Globe,
   ArrowRight, ShieldCheck, Zap, CheckCircle2, Clock
 } from 'lucide-react';
-
-const INITIAL_EVENTS = [
-  { id: 1, time: "18:31:42", text: "ICU occupancy sync completed via HL7", type: "success" },
-  { id: 2, time: "18:29:15", text: "ORR ambulance ETA spike detected", type: "warning" },
-  { id: 3, time: "18:26:04", text: "Monsoon rainfall telemetry updated", type: "info" },
-  { id: 4, time: "18:19:55", text: "EHR patient census reconciled", type: "success" },
-  { id: 5, time: "18:16:30", text: "Staffing roster shift change processed", type: "info" },
-  { id: 6, time: "18:09:12", text: "BMTC traffic density anomaly flagged", type: "warning" },
-];
+import { generateTelemetryEvent, generateInitialEvents } from '../../utils/telemetryEngine';
 
 const INITIAL_CARDS = [
   { id: 'ehr', title: "EHR Feed", icon: Database, latency: 12, state: "Active", color: "text-blue-500", bg: "bg-blue-50" },
@@ -24,22 +16,6 @@ const INITIAL_CARDS = [
   { id: 'lab', title: "Lab Positivity Feed", icon: FlaskConical, latency: 24, state: "Active", color: "text-rose-500", bg: "bg-rose-50" },
   { id: 'pha', title: "Pharmacy Inventory", icon: Pill, latency: 32, state: "Warning", color: "text-orange-500", bg: "bg-orange-50" },
   { id: 'pub', title: "Regional Public Health", icon: Globe, latency: 18, state: "Active", color: "text-cyan-500", bg: "bg-cyan-50" }
-];
-
-const EVENT_TEMPLATES = [
-  { text: "Telemetry packet loss recovered", type: "success" },
-  { text: "ICU census reconciliation completed", type: "success" },
-  { text: "ORR congestion increasing ambulance ETA variance", type: "warning" },
-  { text: "Lab positivity sync latency spike detected", type: "warning" },
-  { text: "Pharmacy inventory feed degraded", type: "warning" },
-  { text: "Pharmacy inventory feed restored", type: "success" },
-  { text: "HL7 bridge connection active", type: "info" },
-  { text: "EHR database replication successful", type: "success" },
-  { text: "BMTC transit data polling delayed", type: "warning" },
-  { text: "Monsoon severity model re-calibrated", type: "info" },
-  { text: "Staffing roster API responding nominally", type: "success" },
-  { text: "Regional viral trend anomalies detected", type: "warning" },
-  { text: "Edge node failover completed successfully", type: "info" }
 ];
 
 const INTEROPERABILITY_TAGS = [
@@ -135,30 +111,44 @@ const AnimatedArrow = ({ delay }) => (
   </div>
 );
 
-const IntegrationHub = () => {
-  const [events, setEvents] = useState(INITIAL_EVENTS);
+const IntegrationHub = ({ operationalState }) => {
+  // Seed events from the engine so initial load is already context-aware
+  const [events, setEvents] = useState(() => generateInitialEvents(operationalState));
   const [cards, setCards] = useState(INITIAL_CARDS);
-  const [eventCounter, setEventCounter] = useState(7);
+  // Stable ref to the last event — avoids the interval closure capturing stale state
+  const lastEventRef = useRef(null);
 
-  // Live Telemetry Event Generator
+  // Re-seed event stream whenever operational state meaningfully changes
   useEffect(() => {
-    const eventInterval = setInterval(() => {
-      const template = EVENT_TEMPLATES[Math.floor(Math.random() * EVENT_TEMPLATES.length)];
-      const newEvent = {
-        id: Date.now(), // Unique ID for AnimatePresence
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        text: template.text,
-        type: template.type
-      };
+    setEvents(generateInitialEvents(operationalState));
+  }, [
+    operationalState?.intelligence?.escalation,
+    operationalState?.intelligence?.conditions?.ambulanceFlow,
+    operationalState?.intelligence?.conditions?.isolationCapacity,
+  ]);
 
-      setEvents(prev => {
-        const updated = [newEvent, ...prev];
-        return updated.slice(0, 8); // Keep max 8 events
-      });
-      setEventCounter(c => c + 1);
-    }, Math.random() * 4000 + 4000); // Random interval between 4-8 seconds
-
-    return () => clearInterval(eventInterval);
+  // Context-aware live telemetry generator
+  useEffect(() => {
+    let timeout;
+    const schedule = () => {
+      // Variable interval: 4–9 seconds, longer when stable
+      const baseMs = 4000;
+      const jitterMs = 5000;
+      timeout = setTimeout(() => {
+        const template = generateTelemetryEvent(operationalState, lastEventRef.current);
+        lastEventRef.current = template;
+        const newEvent = {
+          id: Date.now(),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          text: template.text,
+          type: template.type
+        };
+        setEvents(prev => [newEvent, ...prev].slice(0, 8));
+        schedule(); // reschedule after each emission
+      }, baseMs + Math.random() * jitterMs);
+    };
+    schedule();
+    return () => clearTimeout(timeout);
   }, []);
 
   // Connectivity Cards Dynamics

@@ -215,7 +215,7 @@ const Dashboard = ({ onBack }) => {
 
         {/* ── Grid Content ── */}
         {mode === 'integration' ? (
-          <IntegrationHub />
+          <IntegrationHub operationalState={baseData} />
         ) : mode === 'simulator' ? (
           <ScenarioSimulator baseData={baseData} allData={dashboardData} selectedDayIndex={selectedDayIndex} />
         ) : (
