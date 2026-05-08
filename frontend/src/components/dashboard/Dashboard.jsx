@@ -254,12 +254,12 @@ const Dashboard = ({ onBack }) => {
 
               {/* AI Directives */}
               <div className="min-w-0 h-fit shrink-0">
-                <Recommendations actions={baseData?.recommendations ?? []} riskLevel={baseData?.risk} />
+                <Recommendations baseData={baseData} />
               </div>
 
               {/* Additional Analytics */}
               <div className="min-w-0 h-fit shrink-0">
-                <DepartmentSection departments={baseData?.departments ?? []} />
+                <DepartmentSection baseData={baseData} />
               </div>
             </div>
 
