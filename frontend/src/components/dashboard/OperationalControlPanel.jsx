@@ -35,11 +35,12 @@ export function overridesToScenario(overrides) {
   };
 }
 
-const ControlSlider = ({ label, icon: Icon, value, min, max, step = 1, unit, color, onChange, formatValue }) => {
+const ControlSlider = ({ label, icon: Icon, value, min, max, step = 1, unit, color, onChange, formatValue, invertColor = false }) => {
   const pct = ((value - min) / (max - min)) * 100;
   const displayVal = formatValue ? formatValue(value) : `${value}${unit || ''}`;
 
-  const severity = pct > 80 ? 'critical' : pct > 60 ? 'high' : pct > 35 ? 'moderate' : 'low';
+  const adjustedPct = invertColor ? 100 - pct : pct;
+  const severity = adjustedPct > 80 ? 'critical' : adjustedPct > 60 ? 'high' : adjustedPct > 35 ? 'moderate' : 'low';
   const trackColor =
     severity === 'critical' ? 'from-rose-500 to-red-600' :
     severity === 'high' ? 'from-orange-400 to-orange-500' :
@@ -275,6 +276,7 @@ const OperationalControlPanel = ({ overrides, onChange, replayStatus }) => {
                   min={50} max={100}
                   unit="%"
                   color="bg-blue-50 text-blue-600"
+                  invertColor={true}
                   onChange={v => set('staffingAvailability', v)}
                 />
                 <ControlSlider
