@@ -502,29 +502,6 @@ const OperationalReadiness = ({
           )}
         </div>
 
-        {/* C. Directives (Mitigation Actions) */}
-        <div>
-          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <ListChecks size={14} /> Operational Directives
-          </h3>
-          <div className="vision-card glass-reflection p-5">
-            {allDirectives.length > 0 ? (
-              <div className="space-y-3">
-                {allDirectives.map((d, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/50 border border-slate-100">
-                    <ChevronRight size={14} className="text-red-500 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">{d.protocol}</p>
-                      <p className="text-sm font-medium text-slate-700">{d.action}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-400 text-center py-4">No active directives. Awaiting protocol activation.</p>
-            )}
-          </div>
-        </div>
 
         {/* Available Protocols (Standby) */}
         {standbyProtocols.length > 0 && (
@@ -598,63 +575,39 @@ const OperationalReadiness = ({
           </div>
         </div>
 
-        {/* Staffing Stability */}
-        <div className="vision-card glass-reflection p-5">
+        {/* Operational Directives (Mitigation Actions) */}
+        <div className="vision-card glass-reflection p-5 flex flex-col">
           <div className="flex items-center gap-2 mb-4">
-            <Users size={16} className="text-blue-500" />
-            <h3 className="text-sm font-display font-bold text-slate-800">Staffing Stability</h3>
+            <ListChecks size={16} className="text-indigo-500" />
+            <h3 className="text-sm font-display font-bold text-slate-800">Operational Directives</h3>
           </div>
-          <div className="space-y-3">
-            {staffing.map((s, i) => {
-              // Translate abstract metrics into an operational readiness condition
-              const totalStaff = (s.nurses_on_duty || 0) + (s.doctors_on_duty || 0);
-              const onCall = s.on_call_available || 0;
-              const ratio = s.nurse_patient_ratio;
-              const cs = s.coverage_status;
-
-              let condition;
-              let conditionColor;
-              if (cs === 'critical') {
-                condition = ratio < 0.15
-                  ? `Severely understaffed — on-call reserve required`
-                  : `Coverage critically below safe operating thresholds`;
-                conditionColor = 'text-red-500';
-              } else if (cs === 'strained') {
-                condition = onCall > 0
-                  ? `On-call reserve engaged to maintain coverage`
-                  : `Coverage below recommended nurse-patient ratio`;
-                conditionColor = 'text-amber-500';
-              } else {
-                condition = onCall > 0
-                  ? `Shift fully staffed with on-call standby`
-                  : `Shift fully staffed within safe ratios`;
-                conditionColor = 'text-emerald-600';
-              }
-
-              const statusDot = {
-                adequate: 'bg-emerald-500',
-                strained: 'bg-amber-400',
-                critical: 'bg-red-500',
-              }[cs] || 'bg-emerald-500';
-
-              return (
-                <div key={i} className="flex items-start justify-between p-3 rounded-xl bg-slate-50/50 border border-slate-100 gap-3">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${statusDot}`} />
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-700">{s.department}</p>
-                      <p className={`text-[10px] font-medium mt-0.5 leading-snug ${conditionColor}`}>
-                        {condition}
-                      </p>
-                      <p className="text-[9px] text-slate-400 mt-1">
-                        {totalStaff} on duty{onCall > 0 ? ` · ${onCall} on-call` : ''}
-                      </p>
+          <div className="flex-1 overflow-y-auto pr-1">
+            {allDirectives.length > 0 ? (
+              <div className="space-y-3">
+                {allDirectives.map((d, i) => (
+                  <motion.div 
+                    initial={{ opacity: 0, x: 5 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    transition={{ delay: i * 0.05 }}
+                    key={i} 
+                    className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/50 border border-slate-100"
+                  >
+                    <ChevronRight size={14} className="text-rose-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{d.protocol}</p>
+                      <p className="text-[11px] font-bold text-slate-700 leading-tight">{d.action}</p>
                     </div>
-                  </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center mb-2">
+                  <ShieldCheck size={16} className="text-slate-300" />
                 </div>
-              );
-            })}
-            {staffing.length === 0 && <p className="text-xs text-slate-400 text-center py-4">No staffing data</p>}
+                <p className="text-[10px] font-medium text-slate-400">No active directives. Awaiting protocol activation.</p>
+              </div>
+            )}
           </div>
         </div>
 
