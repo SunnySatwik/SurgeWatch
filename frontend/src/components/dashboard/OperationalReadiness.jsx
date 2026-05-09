@@ -207,7 +207,6 @@ const OperationalReadiness = ({
   const [protocols, setProtocols] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [assessing, setAssessing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -249,22 +248,6 @@ const OperationalReadiness = ({
     return () => clearInterval(interval);
   }, []);
 
-  const handleAssess = async () => {
-    setAssessing(true);
-    try {
-      // Show assessing visual feedback
-      const scenarioModifiers = overridesToScenario(overrides);
-      const result = await runRiskAssessment(scenarioModifiers);
-      if (result.success) {
-        setRisk(result.risk);
-        await loadData();
-      }
-    } catch (err) {
-      console.error('Assessment failed:', err);
-    } finally {
-      setAssessing(false);
-    }
-  };
 
   const handleActivate = async (protocolId) => {
     setActionLoading(true);
@@ -419,16 +402,6 @@ const OperationalReadiness = ({
                   ))}
                 </div>
               </div>
-              <button
-                onClick={handleAssess}
-                disabled={assessing}
-                className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all shrink-0 relative z-10
-                  ${operationalSignal.operationalState.escalationRisk === 'critical'
-                    ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
-                    : 'bg-orange-600 text-white border-orange-600 hover:bg-orange-700'}`}
-              >
-                {assessing ? 'Assessing...' : 'Assess Now'}
-              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -451,11 +424,6 @@ const OperationalReadiness = ({
           <div className="flex items-center gap-2 mb-5 relative z-10">
             <Gauge size={16} className="text-indigo-500" />
             <h3 className="text-sm font-display font-bold text-slate-800">Operational State</h3>
-            <button onClick={handleAssess} disabled={assessing}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50">
-              <ShieldAlert size={12} />
-              {assessing ? 'Assessing...' : 'Run Assessment'}
-            </button>
           </div>
 
           <div className="flex flex-col md:flex-row gap-6 relative z-10 items-center md:items-stretch">

@@ -28,42 +28,6 @@ const frame = (time, label, annotation, overrides) => ({
 
 export const REPLAY_SCENARIOS = [
   {
-    id: 'monsoon_surge',
-    name: 'Monsoon Surge',
-    description: 'Heavy rainfall triggers transit collapse, cascading into ER congestion and ICU pressure.',
-    icon: '🌧',
-    severity: 'high',
-    duration: '8h',
-    tags: ['transport', 'weather', 'ER'],
-    frames: [
-      frame('06:00', 'Pre-shift baseline', 'All departments operating within nominal parameters. Morning handover underway.', {
-        trafficSeverity: 2, respiratoryPositivity: 10, staffingAvailability: 88, erIntakeVolume: 35, icuCapacityPressure: 65, ambulanceLoad: 4, weatherSeverity: 0,
-      }),
-      frame('08:00', 'Rain begins, traffic rising', 'Monsoon onset detected. Outer Ring Road congestion beginning. Ambulance ETAs extending.', {
-        trafficSeverity: 5, respiratoryPositivity: 10, staffingAvailability: 88, erIntakeVolume: 40, icuCapacityPressure: 66, ambulanceLoad: 5, weatherSeverity: 1,
-      }),
-      frame('10:00', 'Heavy rain — ambulance ETA spike', 'Silk Board corridor immobilized. Average ETA exceeding 28 minutes. Intake compression beginning.', {
-        trafficSeverity: 8, respiratoryPositivity: 11, staffingAvailability: 85, erIntakeVolume: 52, icuCapacityPressure: 70, ambulanceLoad: 8, weatherSeverity: 1,
-      }),
-      frame('12:00', 'Storm peak — ER congestion', 'Severe storm conditions. Critical intake compression. ER boarding pressure rising rapidly.', {
-        trafficSeverity: 10, respiratoryPositivity: 13, staffingAvailability: 82, erIntakeVolume: 72, icuCapacityPressure: 76, ambulanceLoad: 11, weatherSeverity: 2,
-      }),
-      frame('14:00', 'ICU saturation approaching', 'ER overflow pushing patients to ICU prematurely. Staffing fatigue elevating. Boarding bottleneck worsening.', {
-        trafficSeverity: 9, respiratoryPositivity: 15, staffingAvailability: 74, erIntakeVolume: 82, icuCapacityPressure: 87, ambulanceLoad: 13, weatherSeverity: 2,
-      }),
-      frame('16:00', 'Escalation posture — Critical', 'Regional diversion protocols evaluated. ICU near saturation. Surge staffing requested.', {
-        trafficSeverity: 10, respiratoryPositivity: 17, staffingAvailability: 68, erIntakeVolume: 90, icuCapacityPressure: 93, ambulanceLoad: 14, weatherSeverity: 2,
-      }),
-      frame('18:00', 'Storm easing — early recovery', 'Rain intensity reducing. Traffic beginning to clear. ER intake decelerating. Staffing reinforcements arriving.', {
-        trafficSeverity: 6, respiratoryPositivity: 14, staffingAvailability: 78, erIntakeVolume: 68, icuCapacityPressure: 85, ambulanceLoad: 9, weatherSeverity: 1,
-      }),
-      frame('20:00', 'Recovery phase', 'Conditions normalizing. Ambulance ETAs returning to baseline. Surge protocols standing down.', {
-        trafficSeverity: 3, respiratoryPositivity: 12, staffingAvailability: 85, erIntakeVolume: 45, icuCapacityPressure: 74, ambulanceLoad: 5, weatherSeverity: 0,
-      }),
-    ],
-  },
-
-  {
     id: 'viral_outbreak',
     name: 'Viral Outbreak',
     description: 'Respiratory positivity surge drives isolation demand, ICU saturation, and clinical staff exhaustion.',
