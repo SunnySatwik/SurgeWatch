@@ -436,21 +436,35 @@ const Dashboard = ({ onBack }) => {
                 {/* Micro analytics strip — operationally grounded hospital KPIs */}
                 <div className="grid grid-cols-4 gap-3 mt-4">
                   <MicroStat
-                    label="Bed Utilization"
-                    value={unifiedBaseData?.load != null ? `${unifiedBaseData.load}%` : '—'}
-                    up={unifiedBaseData?.load != null && unifiedBaseData.load > 65}
-                    neutral={unifiedBaseData?.load == null}
+                    label="Weighted Occupancy"
+                    value={(() => {
+                      // Derive weighted occupancy from actual department loads
+                      // Weights: ED 30%, ICU 25%, General Ward 25%, Peds 10%, Radiology 10%
+                      const depts = unifiedBaseData?.departments ?? [];
+                      if (depts.length === 0) return unifiedBaseData?.load != null ? `${unifiedBaseData.load}%` : '—';
+                      const weights = { Emergency: 0.30, ICU: 0.25, 'General Ward': 0.25, Pediatrics: 0.10, Radiology: 0.10 };
+                      let weighted = 0, totalWeight = 0;
+                      depts.forEach(d => {
+                        const w = weights[d.name] ?? 0.15;
+                        weighted += (d.load ?? 0) * w;
+                        totalWeight += w;
+                      });
+                      const result = totalWeight > 0 ? Math.round(weighted / totalWeight) : (unifiedBaseData?.load ?? 0);
+                      return `${Math.min(result, 99)}%`;
+                    })()}
+                    up={(unifiedBaseData?.load ?? 0) > 65}
+                    neutral={!unifiedBaseData?.load}
                   />
                   <MicroStat
-                    label="Expected Intake"
-                    value={unifiedBaseData?.expectedPatients != null ? `${unifiedBaseData.expectedPatients} pts` : '—'}
+                    label="Projected Admissions (24h)"
+                    value={unifiedBaseData?.expectedPatients != null ? `${unifiedBaseData.expectedPatients}` : '—'}
                     up={unifiedBaseData?.expectedPatients != null && unifiedBaseData.expectedPatients > 140}
                     neutral={unifiedBaseData?.expectedPatients == null}
                   />
                   <MicroStat
                     label="Operational Posture"
                     value={
-                      operationalSignal?.operationalState?.escalationRisk === 'critical' ? 'Critical' :
+                      operationalSignal?.operationalState?.escalationRisk === 'critical' ? 'Critical Surge' :
                       operationalSignal?.operationalState?.escalationRisk === 'elevated' ? 'Elevated' :
                       operationalSignal?.intelligenceMetrics?.osi >= 50 ? 'Monitored' : 'Baseline'
                     }
@@ -458,8 +472,8 @@ const Dashboard = ({ onBack }) => {
                     neutral={!operationalSignal || operationalSignal?.operationalState?.escalationRisk === 'low'}
                   />
                   <MicroStat
-                    label="Above Seasonal"
-                    value={unifiedBaseData?.load != null ? `${unifiedBaseData.load > 65 ? '+' : ''}${(unifiedBaseData.load - 65).toFixed(1)}%` : '—'}
+                    label="vs Historical May Avg"
+                    value={unifiedBaseData?.load != null ? `${unifiedBaseData.load > 65 ? '+' : ''}${(unifiedBaseData.load - 65).toFixed(0)}%` : '—'}
                     up={unifiedBaseData?.load != null && unifiedBaseData.load > 65}
                     neutral={unifiedBaseData?.load == null || unifiedBaseData.load <= 65}
                   />

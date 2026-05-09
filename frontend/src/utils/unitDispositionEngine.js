@@ -45,13 +45,13 @@ const deriveEmergency = (baseLoad, conditions, metrics) => {
   // Derive a single dominant operational indicator
   let indicator;
   if (ambulanceFlow === 'critical intake compression') indicator = 'Ambulance diversion compressing intake';
-  else if (triagePressure === 'overwhelmed') indicator = 'Triage queue saturated — divert risk';
-  else if (erCongestion === 'critical boarding failure') indicator = 'Boarding failure — beds locked';
-  else if (traumaVelocity === 'high-velocity volatility') indicator = 'High-velocity trauma surge active';
-  else if (erCongestion === 'high boarding pressure') indicator = 'Boarding pressure increasing';
+  else if (triagePressure === 'overwhelmed') indicator = 'Triage queue saturated — divert risk elevated';
+  else if (erCongestion === 'critical boarding failure') indicator = 'Boarding backlog critical — beds locked';
+  else if (traumaVelocity === 'high-velocity volatility') indicator = 'Trauma surge — high-velocity intake active';
+  else if (erCongestion === 'high boarding pressure') indicator = 'Boarding backlog increasing';
   else if (ambulanceFlow === 'degraded') indicator = 'Ambulance transit delayed — intake lag';
-  else if (traumaVelocity === 'elevated presentation rate') indicator = 'Trauma presentation rate elevated';
-  else if (delayRisk > 60) indicator = 'Near intake threshold';
+  else if (traumaVelocity === 'elevated presentation rate') indicator = 'Trauma presentation rate above baseline';
+  else if (delayRisk > 60) indicator = 'Intake approaching capacity threshold';
   else indicator = 'Trauma throughput stable';
 
   return { name: 'Emergency', load, status: statusFromLoad(load), indicator };
@@ -79,15 +79,15 @@ const deriveICU = (baseLoad, conditions, metrics) => {
   load = clamp(load);
 
   let indicator;
-  if (isolationCapacity === 'exhausted' && respiratoryPressure === 'critical surge strain') indicator = 'Isolation capacity exhausted — overflow risk';
-  else if (icuWindow === '< 4h') indicator = 'Saturation imminent — under 4h capacity';
+  if (isolationCapacity === 'exhausted' && respiratoryPressure === 'critical surge strain') indicator = 'Isolation at capacity — respiratory overflow risk';
+  else if (icuWindow === '< 4h') indicator = 'Saturation imminent — under 4h window';
   else if (icuWindow === '< 8h') indicator = 'Approaching saturation — under 8h window';
-  else if (isolationCapacity === 'exhausted') indicator = 'Isolation capacity exhausted';
-  else if (respiratoryPressure === 'critical surge strain') indicator = 'Respiratory intake driving ICU demand';
-  else if (isolationCapacity === 'strained') indicator = 'Isolation capacity constrained';
-  else if (respiratoryPressure === 'elevated syndromic pressure') indicator = 'Respiratory intake elevated';
+  else if (isolationCapacity === 'exhausted') indicator = 'Isolation rooms fully occupied';
+  else if (respiratoryPressure === 'critical surge strain') indicator = 'Respiratory surge driving ICU demand';
+  else if (isolationCapacity === 'strained') indicator = 'Isolation demand exceeding safe capacity';
+  else if (respiratoryPressure === 'elevated syndromic pressure') indicator = 'Syndromic pressure elevating ICU load';
   else if (staffingStability === 'fragile ratios') indicator = 'Bed turnover slowed by staffing strain';
-  else indicator = 'Capacity within safe operating range';
+  else indicator = 'ICU capacity within safe operating range';
 
   return { name: 'ICU', load, status: statusFromLoad(load), indicator };
 };
@@ -113,12 +113,12 @@ const deriveGeneralWard = (baseLoad, conditions, metrics) => {
   load = clamp(load);
 
   let indicator;
-  if (erCongestion === 'critical boarding failure' && bedTurnover === 'sub-optimal throughput') indicator = 'ER overflow — beds backing up';
+  if (erCongestion === 'critical boarding failure' && bedTurnover === 'sub-optimal throughput') indicator = 'ER overflow — ward beds backing up';
   else if (erCongestion === 'critical boarding failure') indicator = 'ER overflow spilling into ward';
   else if (bedTurnover === 'sub-optimal throughput') indicator = 'Discharge backlog slowing bed availability';
-  else if (staffingStability === 'fragile ratios') indicator = 'Staffing strain reducing throughput';
-  else if (erCongestion === 'high boarding pressure') indicator = 'ER pressure elevating inpatient load';
-  else if (bedTurnover === 'accelerated disposition') indicator = 'Discharge pace optimized';
+  else if (staffingStability === 'fragile ratios') indicator = 'Staffing strain reducing bed turnover';
+  else if (erCongestion === 'high boarding pressure') indicator = 'ER pressure elevating inpatient demand';
+  else if (bedTurnover === 'accelerated disposition') indicator = 'Discharge pace optimized — beds clearing';
   else indicator = 'Ward capacity stable';
 
   return { name: 'General Ward', load, status: statusFromLoad(load), indicator };
@@ -143,10 +143,10 @@ const deriveRadiology = (baseLoad, conditions, metrics) => {
 
   let indicator;
   if (traumaVelocity === 'high-velocity volatility') indicator = 'Trauma surge driving imaging backlog';
-  else if (traumaVelocity === 'elevated presentation rate' && erCongestion !== 'nominal') indicator = 'Imaging demand elevated — queue building';
+  else if (traumaVelocity === 'elevated presentation rate' && erCongestion !== 'nominal') indicator = 'Trauma imaging queue elevated — queue building';
   else if (erCongestion === 'critical boarding failure') indicator = 'ER boarding creating imaging backlog';
-  else if (traumaVelocity === 'elevated presentation rate') indicator = 'Imaging demand elevated';
-  else if (erCongestion === 'high boarding pressure') indicator = 'Queue pressure rising from ER load';
+  else if (traumaVelocity === 'elevated presentation rate') indicator = 'Imaging demand above baseline';
+  else if (erCongestion === 'high boarding pressure') indicator = 'Imaging queue rising with ER load';
   else indicator = 'Imaging throughput within normal range';
 
   return { name: 'Radiology', load, status: statusFromLoad(load), indicator };
@@ -170,11 +170,11 @@ const derivePediatrics = (baseLoad, conditions, metrics) => {
   load = clamp(load);
 
   let indicator;
-  if (respiratoryPressure === 'critical surge strain' && isolationCapacity === 'exhausted') indicator = 'Viral surge — isolation at capacity limit';
+  if (respiratoryPressure === 'critical surge strain' && isolationCapacity === 'exhausted') indicator = 'Viral surge — isolation rooms at capacity';
   else if (respiratoryPressure === 'critical surge strain') indicator = 'Respiratory surge protocol active';
   else if (isolationCapacity === 'exhausted') indicator = 'Isolation rooms fully occupied';
-  else if (respiratoryPressure === 'elevated syndromic pressure') indicator = 'Respiratory intake elevated';
-  else if (isolationCapacity === 'strained') indicator = 'Isolation capacity constrained';
+  else if (respiratoryPressure === 'elevated syndromic pressure') indicator = 'Respiratory intake above seasonal baseline';
+  else if (isolationCapacity === 'strained') indicator = 'Isolation capacity under pressure';
   else indicator = 'Pediatric intake within baseline';
 
   return { name: 'Pediatrics', load, status: statusFromLoad(load), indicator };

@@ -252,7 +252,7 @@ const OperationalControlPanel = ({ overrides, onChange, replayStatus }) => {
               {/* Controls Grid: 2 columns */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
                 <ControlSlider
-                  label="Traffic Severity"
+                  label="Road Network Strain"
                   icon={Ambulance}
                   value={overrides.trafficSeverity}
                   min={1} max={10}
@@ -261,7 +261,7 @@ const OperationalControlPanel = ({ overrides, onChange, replayStatus }) => {
                   onChange={v => set('trafficSeverity', v)}
                 />
                 <ControlSlider
-                  label="Respiratory Positivity"
+                  label="Respiratory Burden"
                   icon={FlaskConical}
                   value={overrides.respiratoryPositivity}
                   min={0} max={50}
@@ -280,7 +280,7 @@ const OperationalControlPanel = ({ overrides, onChange, replayStatus }) => {
                   onChange={v => set('staffingAvailability', v)}
                 />
                 <ControlSlider
-                  label="ER Intake Volume"
+                  label="ER Intake Pressure"
                   icon={Zap}
                   value={overrides.erIntakeVolume}
                   min={0} max={100}
@@ -289,7 +289,7 @@ const OperationalControlPanel = ({ overrides, onChange, replayStatus }) => {
                   onChange={v => set('erIntakeVolume', v)}
                 />
                 <ControlSlider
-                  label="ICU Capacity Pressure"
+                  label="ICU Stress Signal"
                   icon={BedDouble}
                   value={overrides.icuCapacityPressure}
                   min={0} max={100}
@@ -298,7 +298,7 @@ const OperationalControlPanel = ({ overrides, onChange, replayStatus }) => {
                   onChange={v => set('icuCapacityPressure', v)}
                 />
                 <ControlSlider
-                  label="Ambulance Load"
+                  label="Ambulance Deployment"
                   icon={ShieldAlert}
                   value={overrides.ambulanceLoad}
                   min={1} max={15}
