@@ -350,7 +350,12 @@ const Dashboard = ({ onBack }) => {
                   <MicroStat label="Today's Load" value={`${baseData?.load ?? 0}%`} up />
                   <MicroStat label="Patients" value={baseData?.expectedPatients ?? 0} up />
                   <MicroStat label="Confidence" value={`${baseData?.confidence ?? 0}%`} neutral />
-                  <MicroStat label="Baseline Δ" value="+8.3%" up />
+                  <MicroStat
+                    label="vs Baseline"
+                    value={baseData?.load != null ? `${baseData.load > 65 ? '+' : ''}${(baseData.load - 65).toFixed(1)}%` : '—'}
+                    up={baseData?.load != null && baseData.load > 65}
+                    neutral={baseData?.load == null}
+                  />
                 </div>
               </motion.div>
 

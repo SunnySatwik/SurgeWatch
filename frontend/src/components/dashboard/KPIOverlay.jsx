@@ -59,9 +59,6 @@ const KPIOverlay = ({ data }) => {
                 />
               ))}
             </div>
-            <span className={`text-xs font-bold ${load > 75 ? 'text-rose-500' : 'text-emerald-500'}`}>
-              {load > 75 ? '+2.4%' : '-1.2%'}
-            </span>
           </div>
         </div>
 
