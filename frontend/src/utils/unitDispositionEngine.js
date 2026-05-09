@@ -22,24 +22,26 @@ const clamp = (value, min = 0, max = 100) =>
 /**
  * Emergency Department
  * Primary stressors: ambulance flow, trauma velocity, ER congestion, crowd events.
+ * High sensitivity to transport and intake compression — this is the first department
+ * to feel external surge pressure. Bonuses sized so peak ER stays ~92–96%, not 100%.
  */
 const deriveEmergency = (baseLoad, conditions, metrics) => {
   let load = baseLoad;
   const { ambulanceFlow, traumaVelocity, erCongestion, triagePressure } = conditions;
   const { osi, delayRisk } = metrics;
 
-  if (ambulanceFlow === 'critical intake compression') load += 22;
-  else if (ambulanceFlow === 'degraded') load += 10;
+  if (ambulanceFlow === 'critical intake compression') load += 16;
+  else if (ambulanceFlow === 'degraded') load += 8;
 
-  if (traumaVelocity === 'high-velocity volatility') load += 16;
-  else if (traumaVelocity === 'elevated presentation rate') load += 8;
+  if (traumaVelocity === 'high-velocity volatility') load += 10;
+  else if (traumaVelocity === 'elevated presentation rate') load += 5;
 
-  if (erCongestion === 'critical boarding failure') load += 12;
-  else if (erCongestion === 'high boarding pressure') load += 6;
+  if (erCongestion === 'critical boarding failure') load += 8;
+  else if (erCongestion === 'high boarding pressure') load += 4;
 
-  if (triagePressure === 'overwhelmed') load += 8;
+  if (triagePressure === 'overwhelmed') load += 5;
 
-  load += Math.round(osi * 0.06);
+  load += Math.round(osi * 0.04);
   load = clamp(load);
 
   // Derive a single dominant operational indicator
@@ -59,22 +61,24 @@ const deriveEmergency = (baseLoad, conditions, metrics) => {
 
 /**
  * ICU — stressors: respiratory pressure, isolation capacity, viral load, staffing.
+ * Highest legitimate saturation during respiratory surge — may reach 92–97%.
+ * Isolation and respiratory bonuses kept larger than other departments here.
  */
 const deriveICU = (baseLoad, conditions, metrics) => {
   let load = baseLoad;
   const { isolationCapacity, respiratoryPressure, staffingStability } = conditions;
   const { icuWindow, osi } = metrics;
 
-  if (isolationCapacity === 'exhausted') load += 25;
-  else if (isolationCapacity === 'strained') load += 12;
+  if (isolationCapacity === 'exhausted') load += 18;
+  else if (isolationCapacity === 'strained') load += 8;
 
-  if (respiratoryPressure === 'critical surge strain') load += 18;
-  else if (respiratoryPressure === 'elevated syndromic pressure') load += 8;
+  if (respiratoryPressure === 'critical surge strain') load += 12;
+  else if (respiratoryPressure === 'elevated syndromic pressure') load += 5;
 
-  if (staffingStability === 'fragile ratios') load += 10;
+  if (staffingStability === 'fragile ratios') load += 6;
 
-  if (icuWindow === '< 4h') load += 14;
-  else if (icuWindow === '< 8h') load += 7;
+  if (icuWindow === '< 4h') load += 10;
+  else if (icuWindow === '< 8h') load += 5;
 
   load = clamp(load);
 
@@ -94,22 +98,24 @@ const deriveICU = (baseLoad, conditions, metrics) => {
 
 /**
  * General Ward — stressors: bed turnover, inpatient overflow, staffing stability.
+ * Buffer role: absorbs overflow gradually. Smaller bonuses — should stay
+ * 10–15 pts below ICU/ER during peak to show operational hierarchy.
  */
 const deriveGeneralWard = (baseLoad, conditions, metrics) => {
   let load = baseLoad;
   const { bedTurnover, staffingStability, erCongestion } = conditions;
   const { osi } = metrics;
 
-  if (bedTurnover === 'sub-optimal throughput') load += 12;
-  else if (bedTurnover === 'accelerated disposition') load -= 8;
+  if (bedTurnover === 'sub-optimal throughput') load += 8;
+  else if (bedTurnover === 'accelerated disposition') load -= 6;
 
-  if (erCongestion === 'critical boarding failure') load += 14;
-  else if (erCongestion === 'high boarding pressure') load += 6;
+  if (erCongestion === 'critical boarding failure') load += 10;
+  else if (erCongestion === 'high boarding pressure') load += 4;
 
-  if (staffingStability === 'fragile ratios') load += 8;
-  else if (staffingStability === 'reinforced surge posture') load -= 5;
+  if (staffingStability === 'fragile ratios') load += 5;
+  else if (staffingStability === 'reinforced surge posture') load -= 4;
 
-  load += Math.round(osi * 0.04);
+  load += Math.round(osi * 0.025);
   load = clamp(load);
 
   let indicator;
@@ -126,19 +132,21 @@ const deriveGeneralWard = (baseLoad, conditions, metrics) => {
 
 /**
  * Radiology — stressors: trauma surge, ER boarding, overall system load.
+ * Secondary department: elevated strain during surge but not full collapse.
+ * Bonuses sized so Radiology peaks ~75–85% during worst conditions.
  */
 const deriveRadiology = (baseLoad, conditions, metrics) => {
   let load = baseLoad;
   const { traumaVelocity, erCongestion } = conditions;
   const { osi } = metrics;
 
-  if (traumaVelocity === 'high-velocity volatility') load += 18;
-  else if (traumaVelocity === 'elevated presentation rate') load += 9;
+  if (traumaVelocity === 'high-velocity volatility') load += 12;
+  else if (traumaVelocity === 'elevated presentation rate') load += 6;
 
-  if (erCongestion === 'critical boarding failure') load += 10;
-  else if (erCongestion === 'high boarding pressure') load += 5;
+  if (erCongestion === 'critical boarding failure') load += 7;
+  else if (erCongestion === 'high boarding pressure') load += 3;
 
-  load += Math.round(osi * 0.05);
+  load += Math.round(osi * 0.03);
   load = clamp(load);
 
   let indicator;
@@ -154,19 +162,21 @@ const deriveRadiology = (baseLoad, conditions, metrics) => {
 
 /**
  * Pediatrics — stressors: viral outbreaks, seasonal trends, overall system load.
+ * Responds strongly to respiratory pressure (this is a respiratory surge scenario)
+ * but maintains more headroom than ICU — it's not the primary critical care unit.
  */
 const derivePediatrics = (baseLoad, conditions, metrics) => {
   let load = baseLoad;
   const { respiratoryPressure, isolationCapacity } = conditions;
   const { osi } = metrics;
 
-  if (respiratoryPressure === 'critical surge strain') load += 15;
-  else if (respiratoryPressure === 'elevated syndromic pressure') load += 8;
+  if (respiratoryPressure === 'critical surge strain') load += 11;
+  else if (respiratoryPressure === 'elevated syndromic pressure') load += 5;
 
-  if (isolationCapacity === 'exhausted') load += 10;
-  else if (isolationCapacity === 'strained') load += 5;
+  if (isolationCapacity === 'exhausted') load += 7;
+  else if (isolationCapacity === 'strained') load += 3;
 
-  load += Math.round(osi * 0.03);
+  load += Math.round(osi * 0.02);
   load = clamp(load);
 
   let indicator;

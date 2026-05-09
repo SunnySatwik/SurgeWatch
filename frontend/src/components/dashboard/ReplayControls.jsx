@@ -250,18 +250,18 @@ const ReplayControls = ({ replay, overrides }) => {
             />
           </div>
 
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 gap-3">
             {/* Frame info */}
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
                 {currentFrame?.time ?? '—'}
               </p>
-              <p className="text-[10px] text-slate-500 font-medium leading-tight max-w-[220px] truncate">
+              <p className="text-[10px] text-slate-500 font-medium leading-tight">
                 {currentFrame?.label ?? '—'}
               </p>
             </div>
             {/* Frame counter */}
-            <span className="text-[9px] font-mono text-slate-400">
+            <span className="text-[9px] font-mono text-slate-400 shrink-0">
               {frameIndex + 1}/{totalFrames}
             </span>
           </div>
@@ -345,7 +345,7 @@ const ReplayControls = ({ replay, overrides }) => {
               animate={{ opacity: 1, y: 0 }}
               className="mt-2.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100"
             >
-              <p className="text-[9px] text-slate-500 leading-relaxed">{currentFrame.annotation}</p>
+              <p className="text-[9px] text-slate-500 leading-relaxed break-words">{currentFrame.annotation}</p>
             </motion.div>
           )}
         </div>

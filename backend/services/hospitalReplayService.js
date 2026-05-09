@@ -151,6 +151,22 @@ function findNearestSnapshot(dataset, timestamp) {
 // — they produce only what the replay state needs.
 
 /**
+ * _penalty(value, noBand, fullBand, maxPts)
+ *
+ * Continuous linear scaling helper.
+ * Returns 0 at or below noBand, maxPts at or above fullBand,
+ * and interpolates linearly in between.
+ *
+ * This replaces binary if/else threshold blocks so that a 1-unit
+ * change in any signal never causes a discrete score jump.
+ */
+function _penalty(value, noBand, fullBand, maxPts) {
+  if (value <= noBand)  return 0;
+  if (value >= fullBand) return maxPts;
+  return ((value - noBand) / (fullBand - noBand)) * maxPts;
+}
+
+/**
  * deriveReplayOccupancy(beds)
  * Derives ICU/ER pressure and overall congestion from a bed snapshot.
  */
@@ -260,93 +276,101 @@ function deriveReplayArrivals(arrivals) {
 }
 
 /**
- * deriveReplayReadiness(occupancy, staffing, transport, respiratory, arrivals)
+ * deriveReplayReadiness(bedSnap, staffingSnap, ambulanceSnap, labSnap)
  *
- * Produces a lightweight readiness score and posture label from the five
- * derived sub-states.  Mirrors the scoring logic of hospitalDataService but
- * adapted for the timeline snapshot field shapes.
+ * Produces a smoothed readiness score (0–100) and posture label.
  *
+ * Uses continuous linear scaling per signal (_penalty) instead of binary
+ * threshold bands, so each 1-unit metric change contributes proportionally
+ * rather than triggering a discrete score jump.
+ *
+ * Signal budget (sum of maxPts = 96):
+ *   ICU occupancy   → max 20 pts  (no penalty ≤65%, full at 100%)
+ *   ER occupancy    → max 14 pts  (no penalty ≤50%, full at  98%)
+ *   Boarding        → max  8 pts  (no penalty ≤0,   full at  30)
+ *   Isolation       → max 12 pts  (no penalty ≤72%, full at 100%)
+ *   Staff fatigue   → max 16 pts  (no penalty ≤25%, full at  90%)
+ *   Ambulance ETA   → max 14 pts  (no penalty ≤14 min, full at 55 min)
+ *   Resp positivity → max 12 pts  (no penalty ≤15%,  full at  50%)
+ *
+ * @param {object} bedSnap
+ * @param {object} staffingSnap
+ * @param {object} ambulanceSnap
+ * @param {object} labSnap
  * @returns {{ readinessScore: number, readinessPosture: string }}
  */
-function deriveReplayReadiness(occupancy, staffing, transport, respiratory, arrivals) {
-  let score = 100;
+function deriveReplayReadiness(bedSnap, staffingSnap, ambulanceSnap, labSnap) {
+  const icu        = bedSnap?.icuOccupancy       ?? 65;
+  const er         = bedSnap?.erOccupancy         ?? 45;
+  const boarding   = bedSnap?.boardingPatients     ?? 0;
+  const isolation  = bedSnap?.isolationOccupancy   ?? 72;
+  const fatigue    = staffingSnap?.fatigueLevel    ?? 15;
+  const eta        = ambulanceSnap?.averageETA     ?? 12;
+  const positivity = labSnap?.respiratoryPositive  ?? 18;
 
-  // Capacity penalties
-  if (occupancy.icuPressure    === 'critical')  score -= 14;
-  else if (occupancy.icuPressure === 'elevated') score -= 7;
+  const totalPenalty =
+    _penalty(icu,        65,  100, 20) +
+    _penalty(er,         50,   98, 14) +
+    _penalty(boarding,    0,   30,  8) +
+    _penalty(isolation,  72,  100, 12) +
+    _penalty(fatigue,    25,   90, 16) +
+    _penalty(eta,        14,   55, 14) +
+    _penalty(positivity, 15,   50, 12);
 
-  if (occupancy.erCongestion   === 'volatile')  score -= 12;
-  else if (occupancy.erCongestion === 'elevated') score -= 5;
+  // Max penalty ≈ 96 → score floor ≈ 4 under full saturation
+  const score = Math.max(0, Math.min(100, Math.round(100 - totalPenalty)));
 
-  if (occupancy.isolationStatus === 'exhausted') score -= 12;
-  else if (occupancy.isolationStatus === 'strained') score -= 5;
-
-  // Staffing penalty
-  if (staffing.staffingStability === 'fragile ratios') score -= 14;
-  else if (staffing.staffingStability === 'strained')  score -= 6;
-  if (staffing.fatigueLevel >= 90) score -= 6;
-
-  // Transport penalty
-  if (transport.ambulanceFlow === 'critical intake compression') score -= 14;
-  else if (transport.ambulanceFlow === 'delayed')                score -= 6;
-
-  // Respiratory penalty
-  if (respiratory.respiratoryPressure === 'critical surge strain')       score -= 10;
-  else if (respiratory.respiratoryPressure === 'elevated syndromic pressure') score -= 5;
-
-  // Arrival / intake penalty
-  if (arrivals.intakePressure === 'severe')   score -= 8;
-  else if (arrivals.intakePressure === 'elevated') score -= 4;
-
-  // Momentum bonus/penalty
-  if (occupancy.occupancyMomentum === 'critical')     score -= 8;
-  else if (occupancy.occupancyMomentum === 'recovering') score += 4;
-
-  score = Math.max(0, Math.min(100, Math.round(score)));
-
+  // Wide posture bands (20-pt each) to prevent rapid label switching
   const readinessPosture =
-    score < 35 ? 'Critical Surge'          :
-    score < 55 ? 'Regional Emergency Coordination' :
-    score < 70 ? 'Surge Protocol'          :
-    score < 85 ? 'Elevated Monitoring'     : 'Baseline';
+    score >= 80 ? 'Baseline'                        :
+    score >= 60 ? 'Elevated Monitoring'             :
+    score >= 40 ? 'Surge Protocol'                  :
+    score >= 20 ? 'Regional Emergency Coordination' :
+                  'Critical Surge';
 
   return { readinessScore: score, readinessPosture };
 }
 
+
 /**
- * deriveReplayEscalation(occupancy, staffing, transport, respiratory, arrivals)
+ * deriveReplayEscalation(readinessScore, bedSnap, staffingSnap, ambulanceSnap, labSnap)
  *
- * Counts active stressor flags and maps to an escalation tier.
- * Mirrors the escalation factor logic in useOperationalSync.js.
+ * Derives escalation tier from the numeric readiness score (primary driver)
+ * plus a set of clearly-above-threshold stressor flags (secondary).
+ *
+ * Stressor thresholds are deliberately conservative — raised above the metric
+ * values where the transition genuinely represents a clinical event, not
+ * a marginal boundary crossing.
  *
  * @returns {{ escalationRisk: string, activeStressors: string[], escalationLabel: string }}
  */
-function deriveReplayEscalation(occupancy, staffing, transport, respiratory, arrivals) {
+function deriveReplayEscalation(readinessScore, bedSnap, staffingSnap, ambulanceSnap, labSnap) {
   const stressors = [];
 
-  if (occupancy.icuPressure    === 'critical')                     stressors.push('ICU critical');
-  if (occupancy.erCongestion   === 'volatile')                     stressors.push('ER volatile');
-  if (occupancy.isolationStatus === 'exhausted')                   stressors.push('Isolation exhausted');
-  if (staffing.staffingStability === 'fragile ratios')             stressors.push('Staffing fragile');
-  if (transport.ambulanceFlow  === 'critical intake compression')  stressors.push('Ambulance diversion');
-  if (respiratory.respiratoryPressure === 'critical surge strain') stressors.push('Respiratory critical');
-  if (arrivals.intakePressure  === 'severe')                       stressors.push('Intake severe');
+  // Only flag stressors that are meaningfully beyond safe thresholds
+  if ((bedSnap?.icuOccupancy       ?? 65) >= 92)              stressors.push('ICU critical');
+  if ((bedSnap?.erOccupancy        ?? 45) >= 90 ||
+      (bedSnap?.boardingPatients   ??  0) >= 22)              stressors.push('ER volatile');
+  if ((bedSnap?.isolationOccupancy ?? 72) >= 96)              stressors.push('Isolation exhausted');
+  if ((staffingSnap?.fatigueLevel  ?? 15) >= 82)              stressors.push('Staffing fragile');
+  if ((ambulanceSnap?.averageETA   ?? 12) >= 42)              stressors.push('Ambulance diversion');
+  if ((labSnap?.respiratoryPositive ?? 18) >= 40)             stressors.push('Respiratory critical');
 
-  const count = stressors.length;
-
+  // Escalation risk bands — wide enough to prevent single-frame tier flips
   const escalationRisk =
-    count >= 5 ? 'critical' :
-    count >= 3 ? 'elevated' :
-    count >= 1 ? 'low'      : 'low';
+    readinessScore < 28 ? 'critical' :
+    readinessScore < 60 ? 'elevated' : 'low';
 
+  // Label mirrors posture bands in deriveReplayReadiness
   const escalationLabel =
-    count >= 5 ? 'Critical Surge'                    :
-    count >= 4 ? 'Regional Emergency Coordination'   :
-    count >= 3 ? 'Surge Protocol'                    :
-    count >= 2 ? 'Elevated Monitoring'               : 'Baseline';
+    readinessScore < 20 ? 'Critical Surge'                    :
+    readinessScore < 40 ? 'Regional Emergency Coordination'   :
+    readinessScore < 60 ? 'Surge Protocol'                    :
+    readinessScore < 80 ? 'Elevated Monitoring'               : 'Baseline';
 
   return { escalationRisk, activeStressors: stressors, escalationLabel };
 }
+
 
 // ─── 4. PRIMARY RESOLVER ─────────────────────────────────────────────────────
 
@@ -381,9 +405,10 @@ function resolveHospitalState(timestamp) {
   const respState  = deriveReplayRespiratory(labSnap);
   const arrState   = deriveReplayArrivals(arrivalsSnap);
 
-  // Derive readiness and escalation from unified sub-states
-  const readiness  = deriveReplayReadiness(occState, staffState, transState, respState, arrState);
-  const escalation = deriveReplayEscalation(occState, staffState, transState, respState, arrState);
+  // Derive readiness and escalation directly from raw snapshots
+  // (new signatures take raw snaps, not derived string-label states)
+  const readiness  = deriveReplayReadiness(bedSnap, staffingSnap, ambulanceSnap, labSnap);
+  const escalation = deriveReplayEscalation(readiness.readinessScore, bedSnap, staffingSnap, ambulanceSnap, labSnap);
 
   return {
     // ── Meta ──────────────────────────────────────────────────────────────────

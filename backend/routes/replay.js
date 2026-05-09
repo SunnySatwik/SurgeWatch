@@ -22,42 +22,68 @@ const {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 /**
+ * _softScale(value, inputMax, outputCeiling)
+ *
+ * Applies a soft ceiling so that raw dataset values (which legitimately
+ * reach inputMax during peak surge) don't saturate override inputs
+ * before unitDispositionEngine adds its own department-specific bonuses.
+ *
+ * Maps [0, inputMax] → [0, outputCeiling] using a mild square-root curve
+ * that compresses the top of the range without distorting lower values.
+ *
+ * Example: _softScale(100, 100, 88) → 88
+ *          _softScale(80,  100, 88) → ~78.4
+ *          _softScale(50,  100, 88) → ~62.2
+ */
+function _softScale(value, inputMax, outputCeiling) {
+  const normalized = Math.min(1, Math.max(0, value / inputMax));
+  // Mild compression: sqrt gives slightly more headroom at high values
+  const curved = Math.sqrt(normalized);
+  return Math.round(curved * outputCeiling);
+}
+
+/**
  * Maps a resolved hospitalReplayService snapshot to the `overrides` shape
  * consumed by the frontend OperationalControlPanel / useOperationalSync.
  *
  * This is the ONLY translation layer between dataset values and the frontend
- * override vocabulary.  Keep it here so the frontend never needs to know
+ * override vocabulary. Keep it here so the frontend never needs to know
  * about raw dataset field names.
+ *
+ * Soft-ceiling scaling is applied to occupancy-derived overrides so that
+ * unitDispositionEngine retains headroom to express differentiated
+ * departmental pressure rather than globally saturating at 100%.
  */
 function snapshotToOverrides(snapshot) {
   const m = snapshot.metrics;
 
   return {
-    // Road Network Strain (1–10)
-    // Map trafficSeverity directly — already on 1–10 scale in dataset
+    // Road Network Strain (1–10) — direct mapping; scale already bounded
     trafficSeverity: Math.round(Math.min(10, Math.max(1, m.trafficSeverity ?? 3))),
 
-    // Respiratory Burden (0–50 %)
-    // Dataset stores absolute positive test count; use positivityRate field
-    respiratoryPositivity: Math.round(Math.min(50, Math.max(0, m.respiratoryPositive ?? 18))),
+    // Respiratory Burden (0–50 %) — soft-ceiling at 44% so engine can differentiate
+    // ICU vs Pediatrics respiratory sensitivity above this level
+    respiratoryPositivity: _softScale(m.respiratoryPositive ?? 18, 50, 44),
 
-    // Staffing Availability (50–100 %)
-    // Derived from fatigue: high fatigue → lower availability
-    staffingAvailability: Math.round(Math.min(100, Math.max(50,
-      100 - (m.fatigueLevel ?? 15) * 0.5
+    // Staffing Availability (50–100 %) — inverted fatigue with soft floor
+    // High fatigue → low availability, but floor raised to 55% so engine
+    // can still express 'fragile ratios' without starting from 50%
+    staffingAvailability: Math.round(Math.min(100, Math.max(55,
+      100 - (m.fatigueLevel ?? 15) * 0.44
     ))),
 
-    // ER Intake Pressure (0–100 %)
-    erIntakeVolume: Math.round(Math.min(100, Math.max(0, m.erOccupancy ?? 45))),
+    // ER Intake Pressure (0–100 %) — soft ceiling at 86%
+    // Leaves ~14 pts for erCongestion bonuses in deriveEmergency
+    erIntakeVolume: _softScale(m.erOccupancy ?? 45, 100, 86),
 
-    // ICU Stress Signal (0–100 %)
-    icuCapacityPressure: Math.round(Math.min(100, Math.max(0, m.icuOccupancy ?? 65))),
+    // ICU Stress Signal (0–100 %) — soft ceiling at 85%
+    // Leaves ~15 pts for isolation/respiratory bonuses in deriveICU
+    icuCapacityPressure: _softScale(m.icuOccupancy ?? 65, 100, 85),
 
-    // Ambulance Deployment (1–15 active units)
+    // Ambulance Deployment (1–15 active units) — direct; bounded range
     ambulanceLoad: Math.round(Math.min(15, Math.max(1, m.activeAmbulances ?? 6))),
 
     // Weather Severity (0 = clear, 1 = rain, 2 = heavy storm)
-    // Infer from trafficSeverity + ambulance weather impact
     weatherSeverity:
       m.trafficSeverity >= 9 ? 2 :
       m.trafficSeverity >= 6 ? 1 : 0,
