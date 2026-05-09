@@ -198,7 +198,7 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
   const [protocols, setProtocols] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [eventTimeline, setEventTimeline] = useState([]);
-  const lastStateRef = React.useRef(null);
+  const lastSignalRef = React.useRef(null);
   const [loading, setLoading] = useState(true);
   const [assessing, setAssessing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -292,9 +292,30 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
   useEffect(() => {
     if (!operationalSignal) return;
 
+    // Detect transitions by comparing with last signal
+    const prev = lastSignalRef.current;
+    lastSignalRef.current = operationalSignal;
+
+    if (!prev) return; // Skip initial load as telemetry events are usually default success
+
+    // We only want to inject events if the underlying states changed
+    const states = operationalSignal.operationalState;
+    const prevStates = prev.operationalState;
+
+    const changed = 
+      states.ambulanceFlow !== prevStates.ambulanceFlow ||
+      states.icuPressure !== prevStates.icuPressure ||
+      states.staffingStability !== prevStates.staffingStability ||
+      states.respiratoryPressure !== prevStates.respiratoryPressure ||
+      states.erCongestion !== prevStates.erCongestion ||
+      states.escalationRisk !== prevStates.escalationRisk;
+
+    if (!changed) return;
+
     // Convert new signal events to timeline format
+    // Use a stable hash-like ID based on title + type + approximate time window (to allow repeat events later)
     const newEvents = (operationalSignal.telemetryEvents || []).map(e => ({
-      id: `${e.title}-${e.type}-${Date.now()}-${Math.random()}`,
+      id: `${e.title}-${e.type}-${Math.floor(Date.now() / 5000)}`, // Stable ID within 5s window
       title: e.title,
       message: e.message,
       severity: e.severity,
@@ -302,17 +323,20 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
       created_at: new Date().toISOString(),
     }));
 
-    // Deduplicate against recent events to prevent rerender storms
-    setEventTimeline(prev => {
+    // Deduplicate against the entire current timeline to prevent re-insertion of same state
+    setEventTimeline(prevTimeline => {
       const filteredNew = newEvents.filter(ne => {
-        // Find if this exact type and title was added recently
-        return !prev.slice(0, 5).some(pe => pe.title === ne.title && pe.status === ne.status);
+        // Don't add if this exact title and status already exists in the recent history (last 10)
+        return !prevTimeline.slice(0, 10).some(pe => pe.title === ne.title && pe.status === ne.status);
       });
-      if (filteredNew.length === 0) return prev;
-      return [...filteredNew, ...prev].slice(0, 20); // Keep last 20
+      
+      if (filteredNew.length === 0) return prevTimeline;
+      
+      // Bounded history: keep last 12 events
+      return [...filteredNew, ...prevTimeline].slice(0, 12);
     });
 
-  }, [operationalSignal, replay]);
+  }, [operationalSignal]);
 
   // Inject explicit REPLAY EVENT markers when replay boundaries trigger
   useEffect(() => {
@@ -328,7 +352,7 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
         };
         // Avoid duplicate markers
         if (prev[0]?.title === marker.title && prev[0]?.status === 'REPLAY EVENT') return prev;
-        return [marker, ...prev].slice(0, 20);
+        return [marker, ...prev].slice(0, 12);
       });
     }
   }, [replay?.status, replay?.frameIndex, replay?.scenario]);
