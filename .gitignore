@@ -32,6 +32,11 @@ env/
 *.pkl
 *.model
 
+# SQLite Database
+*.db
+*.db-wal
+*.db-shm
+
 # OS Files
 .DS_Store
 Thumbs.db

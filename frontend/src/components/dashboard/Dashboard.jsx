@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Activity, LayoutDashboard,
   Home, User, Beaker,
-  AlertTriangle, ArrowUpRight, Sparkles, Database
+  AlertTriangle, ArrowUpRight, Sparkles, Database,
+  Shield, Gauge
 } from 'lucide-react';
 import { DASHBOARD_DATA as INITIAL_DATA } from '../../data/data';
 import {
@@ -22,6 +23,8 @@ import DepartmentSection from './DepartmentSection';
 import WeatherWidget from './WeatherWidget';
 import ScenarioSimulator from './ScenarioSimulator';
 import IntegrationHub from './IntegrationHub';
+import ProtocolPanel from './ProtocolPanel';
+import OperationalReadiness from './OperationalReadiness';
 
 const riskConfig = {
   Critical: { badge: 'risk-badge-critical', glow: 'risk-critical', dot: 'bg-red-500' },
@@ -34,7 +37,7 @@ const riskConfig = {
 const Dashboard = ({ onBack }) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [mode, setMode] = useState('insights'); // 'insights' | 'simulator' | 'integration'
+  const [mode, setMode] = useState('insights'); // 'insights' | 'simulator' | 'integration' | 'protocols' | 'readiness'
   const containerRef = useRef(null);
   const [dashboardData, setDashboardData] = useState(INITIAL_DATA);
   const [baseData, setBaseData] = useState(null);
@@ -136,27 +139,37 @@ const Dashboard = ({ onBack }) => {
           <NavItem icon={LayoutDashboard} label="Insights" active={mode === 'insights'} onClick={() => setMode('insights')} />
           <NavItem icon={Beaker} label="Scenario Lab" active={mode === 'simulator'} onClick={() => setMode('simulator')} />
           <NavItem icon={Database} label="Integration Hub" active={mode === 'integration'} onClick={() => setMode('integration')} />
+          <NavItem icon={Shield} label="Protocols" active={mode === 'protocols'} onClick={() => setMode('protocols')} />
+          <NavItem icon={Gauge} label="Readiness" active={mode === 'readiness'} onClick={() => setMode('readiness')} />
         </nav>
 
         {/* AI Status pill */}
         <div className="hidden md:flex px-5 mb-4 w-full">
           <div className={`w-full px-4 py-3 rounded-2xl border flex items-center gap-3 transition-colors 
             ${mode === 'simulator' ? 'bg-amber-50 border-amber-100' : 
-              mode === 'integration' ? 'bg-blue-50 border-blue-100' : 'bg-emerald-50 border-emerald-100'}`}>
+              mode === 'integration' ? 'bg-blue-50 border-blue-100' :
+              mode === 'protocols' ? 'bg-red-50 border-red-100' :
+              mode === 'readiness' ? 'bg-purple-50 border-purple-100' : 'bg-emerald-50 border-emerald-100'}`}>
             <div className="relative w-2.5 h-2.5">
               <div className={`absolute inset-0 rounded-full animate-ping 
-                ${mode === 'simulator' ? 'bg-amber-500' : mode === 'integration' ? 'bg-blue-500' : 'bg-emerald-500'}`} />
+                ${mode === 'simulator' ? 'bg-amber-500' : mode === 'integration' ? 'bg-blue-500' :
+                  mode === 'protocols' ? 'bg-red-500' : mode === 'readiness' ? 'bg-purple-500' : 'bg-emerald-500'}`} />
               <div className={`w-2.5 h-2.5 rounded-full relative 
-                ${mode === 'simulator' ? 'bg-amber-500' : mode === 'integration' ? 'bg-blue-500' : 'bg-emerald-500'}`} />
+                ${mode === 'simulator' ? 'bg-amber-500' : mode === 'integration' ? 'bg-blue-500' :
+                  mode === 'protocols' ? 'bg-red-500' : mode === 'readiness' ? 'bg-purple-500' : 'bg-emerald-500'}`} />
             </div>
             <div>
               <p className={`text-[10px] font-black uppercase tracking-widest 
-                ${mode === 'simulator' ? 'text-amber-700' : mode === 'integration' ? 'text-blue-700' : 'text-emerald-700'}`}>
-                {mode === 'simulator' ? 'Sim Engine' : mode === 'integration' ? 'Data Sync' : 'Model Live'}
+                ${mode === 'simulator' ? 'text-amber-700' : mode === 'integration' ? 'text-blue-700' :
+                  mode === 'protocols' ? 'text-red-700' : mode === 'readiness' ? 'text-purple-700' : 'text-emerald-700'}`}>
+                {mode === 'simulator' ? 'Sim Engine' : mode === 'integration' ? 'Data Sync' :
+                 mode === 'protocols' ? 'Protocol Mgmt' : mode === 'readiness' ? 'Ops Readiness' : 'Model Live'}
               </p>
               <p className={`text-[9px] font-medium 
-                ${mode === 'simulator' ? 'text-amber-600' : mode === 'integration' ? 'text-blue-600' : 'text-emerald-600'}`}>
-                {mode === 'integration' ? 'All systems active' : `v2.4 · ${baseData?.confidence}% acc.`}
+                ${mode === 'simulator' ? 'text-amber-600' : mode === 'integration' ? 'text-blue-600' :
+                  mode === 'protocols' ? 'text-red-600' : mode === 'readiness' ? 'text-purple-600' : 'text-emerald-600'}`}>
+                {mode === 'integration' ? 'All systems active' : mode === 'protocols' ? 'Surge response control' :
+                 mode === 'readiness' ? 'Risk assessment live' : `v2.4 · ${baseData?.confidence}% acc.`}
               </p>
             </div>
           </div>
@@ -252,6 +265,10 @@ const Dashboard = ({ onBack }) => {
           <IntegrationHub operationalState={baseData} testMode={testMode} />
         ) : mode === 'simulator' ? (
           <ScenarioSimulator baseData={baseData} allData={dashboardData} selectedDayIndex={selectedDayIndex} selectedDayCtx={selectedDayCtx} />
+        ) : mode === 'protocols' ? (
+          <ProtocolPanel />
+        ) : mode === 'readiness' ? (
+          <OperationalReadiness />
         ) : (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start auto-rows-min min-w-0 pb-20">
             {/* LEFT COLUMN: Forecast, Recommendations, Departments */}
@@ -345,7 +362,10 @@ const Dashboard = ({ onBack }) => {
                 </>
               )}
               <div className="w-px h-5 bg-slate-200" />
-              <button className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
+              <button
+                onClick={() => setMode('protocols')}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+              >
                 Run Protocols <ArrowUpRight size={12} />
               </button>
             </div>
