@@ -5,7 +5,7 @@ export const DASHBOARD_DATA = [
     load: 65,
     expectedPatients: 142,
     confidence: 98,
-    risk: "Medium",
+    risk: "Moderate",
     riskColor: "text-yellow-400",
     shap: [
       { factor: "Local Festival (Lead-in)", value: 15, type: "negative" },

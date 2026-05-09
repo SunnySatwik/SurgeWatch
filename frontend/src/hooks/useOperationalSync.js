@@ -149,23 +149,125 @@ function deriveOperationalSignal(overrides) {
   // --- Telemetry Events (live reactive events for audit stream) ---
   const telemetryEvents = [];
 
+  // Transport
   if (ambulanceFlow === 'critical intake compression')
-    telemetryEvents.push({ severity: 'critical', title: 'Ambulance Diversion Active', message: `Traffic severity ${trafficSeverity}/10 causing >40min ETAs. Intake compression underway.` });
-  
+    telemetryEvents.push({ severity: 'critical', type: 'ESCALATED', title: 'Ambulance Diversion Active', message: `Traffic severity ${trafficSeverity}/10 causing >40min ETAs. Intake compression underway.` });
+  else if (ambulanceFlow === 'delayed')
+    telemetryEvents.push({ severity: 'warning', type: 'WARNING', title: 'Ambulance Transit Delayed', message: `Traffic severity ${trafficSeverity}/10.` });
+  else if (ambulanceFlow === 'normal')
+    telemetryEvents.push({ severity: 'success', type: 'STABILIZED', title: 'Ambulance Flow Nominal', message: `Transport network operating within nominal transit times.` });
+
+  // Capacity
   if (icuPressure === 'critical')
-    telemetryEvents.push({ severity: 'critical', title: 'ICU Saturation Warning', message: `ICU capacity at ${effectiveIcuPressure.toFixed(0)}%. Isolation demand elevated due to respiratory pressure.` });
-  
+    telemetryEvents.push({ severity: 'critical', type: 'ESCALATED', title: 'ICU Boarding Pressure', message: `ICU capacity at ${effectiveIcuPressure.toFixed(0)}%. Isolation demand elevated due to respiratory pressure.` });
+  else if (icuPressure === 'elevated')
+    telemetryEvents.push({ severity: 'warning', type: 'WARNING', title: 'ICU Capacity Elevated', message: `ICU capacity at ${effectiveIcuPressure.toFixed(0)}%.` });
+  else
+    telemetryEvents.push({ severity: 'success', type: 'RECOVERED', title: 'ICU Capacity Stabilized', message: `ICU capacity operating safely at ${effectiveIcuPressure.toFixed(0)}%.` });
+
+  // Clinical/Respiratory
   if (respiratoryCritical)
-    telemetryEvents.push({ severity: 'high', title: 'Respiratory Surge Detected', message: `Positivity rate at ${respiratoryPositivity}%. Viral pressure classified as Critical. Isolations demanded.` });
-  
+    telemetryEvents.push({ severity: 'critical', type: 'ACTIVATED', title: 'Respiratory Surge Protocol', message: `Positivity rate at ${respiratoryPositivity}%. Viral pressure classified as Critical. Isolations demanded.` });
+  else if (respiratoryElevated)
+    telemetryEvents.push({ severity: 'warning', type: 'WARNING', title: 'Respiratory Activity Elevated', message: `Positivity rate at ${respiratoryPositivity}%.` });
+  else
+    telemetryEvents.push({ severity: 'success', type: 'STOOD DOWN', title: 'Respiratory Isolation', message: `Viral activity returning to baseline levels.` });
+
+  // Staffing
   if (staffingStability === 'fragile')
-    telemetryEvents.push({ severity: 'high', title: 'Staffing Stability Fragile', message: `Availability at ${staffingAvailability}%. Nurse-patient ratios below safe operating thresholds.` });
-  
+    telemetryEvents.push({ severity: 'critical', type: 'ACTIVATED', title: 'Staffing Escalation Protocol', message: `Availability at ${staffingAvailability}%. Nurse-patient ratios below safe operating thresholds.` });
+  else if (staffingStability === 'strained')
+    telemetryEvents.push({ severity: 'warning', type: 'WARNING', title: 'Staffing Ratios Strained', message: `Availability at ${staffingAvailability}%.` });
+  else
+    telemetryEvents.push({ severity: 'success', type: 'RECOVERED', title: 'Staffing Stability', message: `Staffing availability restored to ${staffingAvailability}%.` });
+
+  // ER
   if (erCongestion === 'volatile')
-    telemetryEvents.push({ severity: 'warning', title: 'ER Congestion Volatile', message: `ER intake at ${effectiveErPressure.toFixed(0)}% with boarding build-up. Triage pressure escalating.` });
-  
+    telemetryEvents.push({ severity: 'warning', type: 'ESCALATED', title: 'ER Congestion Volatile', message: `ER intake at ${effectiveErPressure.toFixed(0)}% with boarding build-up. Triage pressure escalating.` });
+  else if (erCongestion === 'stable')
+    telemetryEvents.push({ severity: 'success', type: 'STABILIZED', title: 'ER Throughput Stable', message: `ER intake operations within baseline capacity.` });
+
+  // Environmental
   if (weatherSeverity === 2)
-    telemetryEvents.push({ severity: 'warning', title: 'Severe Weather Advisory', message: 'Heavy storm conditions active. Regional trauma response capacity degraded.' });
+    telemetryEvents.push({ severity: 'warning', type: 'ACTIVATED', title: 'Severe Weather Protocol', message: 'Heavy storm conditions active. Regional trauma response capacity degraded.' });
+
+  // ── Vocabulary Bridge ──────────────────────────────────────────────────────
+  // Translates internal state into the vocabulary that unitDispositionEngine
+  // and predictiveInsightsEngine consume. This is the single translation point
+  // ensuring ALL downstream engines read from the same operational truth.
+  const intelligenceConditions = {
+    // Transport
+    ambulanceFlow:
+      ambulanceFlow === 'critical intake compression' ? 'critical intake compression' :
+      ambulanceFlow === 'delayed' ? 'degraded' : 'stable',
+
+    // ER
+    erCongestion:
+      erCongestion === 'volatile' ? 'critical boarding failure' :
+      erCongestion === 'elevated' ? 'high boarding pressure' : 'nominal',
+
+    triagePressure:
+      erCongestion === 'volatile' ? 'overwhelmed' :
+      erCongestion === 'elevated' ? 'sustained strain' : 'manageable',
+
+    // Respiratory / Isolation
+    respiratoryPressure:
+      respiratoryCritical ? 'critical surge strain' :
+      respiratoryElevated ? 'elevated syndromic pressure' : 'stable',
+
+    isolationCapacity:
+      respiratoryCritical ? 'exhausted' :
+      respiratoryElevated ? 'strained' : 'available',
+
+    // Staffing
+    staffingStability:
+      staffingDepleted ? 'fragile ratios' :
+      staffingStrained ? 'strained' : 'adequate',
+
+    // Bed turnover (derived from combined ER + staffing pressure)
+    bedTurnover:
+      (staffingDepleted && erCongestion !== 'stable') ? 'sub-optimal throughput' :
+      (!staffingStrained && erCongestion === 'stable') ? 'accelerated disposition' : 'nominal',
+
+    // Trauma velocity (derived from ambulance + ER interaction)
+    traumaVelocity:
+      (ambulanceCritical && erCongestion === 'volatile') ? 'high-velocity volatility' :
+      (ambulanceCritical || erCongestion === 'elevated') ? 'elevated presentation rate' : 'baseline',
+
+    // Escalation label (for executive briefing / predictive engine)
+    escalation:
+      escalationFactors >= 4 ? 'Critical Incident Mode' :
+      escalationFactors >= 3 ? 'Regional Emergency Coordination' :
+      escalationFactors >= 2 ? 'Surge Protocol' :
+      escalationFactors >= 1 ? 'Elevated Monitoring' : 'Stable',
+  };
+
+  // ICU window derived from effective pressure
+  const icuWindowLabel =
+    effectiveIcuPressure >= 95 ? '< 4h' :
+    effectiveIcuPressure >= 88 ? '< 8h' :
+    effectiveIcuPressure >= 75 ? '< 12h' :
+    effectiveIcuPressure >= 60 ? '< 24h' : '> 24h';
+
+  // OSI: Operational Stress Index (0–100)
+  const osi = Math.min(100, Math.round(
+    (effectiveIcuPressure * 0.25) +
+    (effectiveErPressure * 0.20) +
+    ((100 - staffingAvailability) * 0.25) +
+    (respiratoryPositivity * 1.5 * 0.15) +
+    (trafficSeverity * 5 * 0.15)
+  ));
+
+  // Surge probability (0–100)
+  const surgeProb = Math.min(100, escalationFactors * 22);
+
+  const intelligenceMetrics = {
+    osi,
+    surgeProb,
+    delayRisk: Math.round(trafficSeverity * 8 + (weatherSeverity === 2 ? 20 : weatherSeverity === 1 ? 8 : 0)),
+    icuWindow: icuWindowLabel,
+    readinessScore: Math.max(20, 85 - Math.min(65, readinessPenalty)),
+  };
 
   return {
     operationalState: {
@@ -181,6 +283,8 @@ function deriveOperationalSignal(overrides) {
       respiratoryEscalation,
       intakeAcceleration,
     },
+    intelligenceConditions,
+    intelligenceMetrics,
     readinessDelta: Math.min(80, readinessPenalty),
     telemetryEvents,
     metrics: {
@@ -193,6 +297,7 @@ function deriveOperationalSignal(overrides) {
       weatherSeverity,
     },
   };
+
 }
 
 /**

@@ -8,9 +8,9 @@ import {
   Zap, AlertTriangle, CheckCircle2, Clock,
   ChevronRight, ListChecks
 } from 'lucide-react';
-import { 
+import {
   fetchRisk, fetchOperationalMetrics, runRiskAssessment,
-  fetchProtocols, activateProtocol, deactivateProtocol, fetchAlerts 
+  fetchProtocols, activateProtocol, deactivateProtocol, fetchAlerts
 } from '../../utils/operationsService';
 import OperationalControlPanel, { DEFAULT_OVERRIDES, overridesToScenario } from './OperationalControlPanel';
 import ReplayControls from './ReplayControls';
@@ -152,27 +152,41 @@ const ProtocolCard = ({ protocol, onActivate, onDeactivate, isLoading }) => {
 };
 
 const AlertItem = ({ alert }) => {
-  const severityColors = { critical: 'bg-red-500', high: 'bg-orange-500', warning: 'bg-amber-500', info: 'bg-blue-500' };
+  const severityColors = { critical: 'bg-red-500', high: 'bg-orange-500', warning: 'bg-amber-500', info: 'bg-blue-500', success: 'bg-emerald-500' };
+
+  const statusLabels = {
+    'ACTIVATED': 'bg-red-50 text-red-600 border-red-200',
+    'ESCALATED': 'bg-orange-50 text-orange-600 border-orange-200',
+    'STABILIZED': 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    'RECOVERED': 'bg-blue-50 text-blue-600 border-blue-200',
+    'REPLAY EVENT': 'bg-purple-50 text-purple-600 border-purple-200',
+    'STOOD DOWN': 'bg-slate-50 text-slate-500 border-slate-200',
+    'WARNING': 'bg-amber-50 text-amber-600 border-amber-200',
+    'active': 'bg-red-50 text-red-600 border-red-200',
+    'acknowledged': 'bg-slate-50 text-slate-500 border-slate-200'
+  };
+
+  const statusStyle = statusLabels[alert.status] || statusLabels['active'];
+
   return (
     <motion.div layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-start gap-3 py-2">
-      <div className="mt-1.5 relative">
+      <div className="mt-1.5 relative shrink-0">
         <div className={`w-2.5 h-2.5 rounded-full ${severityColors[alert.severity] || 'bg-slate-400'}`} />
-        {alert.status === 'active' && alert.severity === 'critical' && (
+        {['ACTIVATED', 'ESCALATED', 'active'].includes(alert.status) && alert.severity === 'critical' && (
           <span className="absolute -top-0.5 -left-0.5 flex h-3.5 w-3.5">
             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${severityColors[alert.severity]} opacity-40`} />
           </span>
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-bold text-slate-700 truncate">{alert.title}</span>
-          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-            alert.status === 'active' ? 'bg-red-50 text-red-600' :
-            alert.status === 'acknowledged' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'
-          }`}>{alert.status}</span>
+          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0 ${statusStyle}`}>
+            {alert.status}
+          </span>
         </div>
         <p className="text-[11px] text-slate-500 mt-0.5 leading-snug line-clamp-1">{alert.message}</p>
-        <p className="text-[9px] text-slate-400 font-mono mt-1">{new Date(alert.created_at).toLocaleString()}</p>
+        <p className="text-[9px] text-slate-400 font-mono mt-1">{new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
       </div>
     </motion.div>
   );
@@ -183,6 +197,8 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
   const [metrics, setMetrics] = useState(null);
   const [protocols, setProtocols] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [eventTimeline, setEventTimeline] = useState([]);
+  const lastStateRef = React.useRef(null);
   const [loading, setLoading] = useState(true);
   const [assessing, setAssessing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -227,7 +243,7 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
   const handleAssess = async () => {
     setAssessing(true);
     try {
-      // Pass current overrides as scenario modifiers into the assessment
+      // Show assessing visual feedback
       const scenarioModifiers = overridesToScenario(overrides);
       const result = await runRiskAssessment(scenarioModifiers);
       if (result.success) {
@@ -272,7 +288,50 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
       setTimeout(() => setToast(null), 4000);
     }
   };
+  // Audit Stream Accumulator logic
+  useEffect(() => {
+    if (!operationalSignal) return;
 
+    // Convert new signal events to timeline format
+    const newEvents = (operationalSignal.telemetryEvents || []).map(e => ({
+      id: `${e.title}-${e.type}-${Date.now()}-${Math.random()}`,
+      title: e.title,
+      message: e.message,
+      severity: e.severity,
+      status: e.type || 'active',
+      created_at: new Date().toISOString(),
+    }));
+
+    // Deduplicate against recent events to prevent rerender storms
+    setEventTimeline(prev => {
+      const filteredNew = newEvents.filter(ne => {
+        // Find if this exact type and title was added recently
+        return !prev.slice(0, 5).some(pe => pe.title === ne.title && pe.status === ne.status);
+      });
+      if (filteredNew.length === 0) return prev;
+      return [...filteredNew, ...prev].slice(0, 20); // Keep last 20
+    });
+
+  }, [operationalSignal, replay]);
+
+  // Inject explicit REPLAY EVENT markers when replay boundaries trigger
+  useEffect(() => {
+    if (replay?.status === 'playing' && replay?.frameIndex === 0) {
+      setEventTimeline(prev => {
+        const marker = {
+          id: `replay-start-${Date.now()}`,
+          title: `Scenario Replay: ${replay.scenario?.name || 'Simulation'}`,
+          message: 'Initiating operational stress replay sequence.',
+          severity: 'info',
+          status: 'REPLAY EVENT',
+          created_at: new Date().toISOString()
+        };
+        // Avoid duplicate markers
+        if (prev[0]?.title === marker.title && prev[0]?.status === 'REPLAY EVENT') return prev;
+        return [marker, ...prev].slice(0, 20);
+      });
+    }
+  }, [replay?.status, replay?.frameIndex, replay?.scenario]);
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
@@ -287,26 +346,19 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
   const latestMetric = metrics?.metrics?.[0];
   const beds = metrics?.beds || risk?.beds || [];
   const staffing = metrics?.staffing || [];
-  
+
   const activeProtocols = protocols.filter(p => p.status === 'active');
   const standbyProtocols = protocols.filter(p => p.status !== 'active');
-  
+
   // Extract directives from active protocols + live signal-driven directives
   const allDirectives = activeProtocols.flatMap(p => {
     const actions = typeof p.actions === 'string' ? JSON.parse(p.actions) : (p.actions || []);
     return actions.map(action => ({ protocol: p.name, action }));
   });
 
-  // Merge live telemetry events from operationalSignal into the audit stream
-  const syntheticEvents = (operationalSignal?.telemetryEvents || []).map((e, i) => ({
-    id: `live-${i}`,
-    title: e.title,
-    message: e.message,
-    severity: e.severity,
-    status: 'active',
-    created_at: new Date().toISOString(),
-  }));
-  const mergedAlerts = [...syntheticEvents, ...alerts].slice(0, 12);
+
+
+  const mergedAlerts = [...eventTimeline];
 
   // Apply live readiness delta to the displayed score
   const liveRiskScore = risk
@@ -314,10 +366,10 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
     : null;
   const liveRisk = risk
     ? {
-        ...risk,
-        score: liveRiskScore,
-        level: liveRiskScore >= 81 ? 'CRITICAL' : liveRiskScore >= 61 ? 'HIGH' : liveRiskScore >= 36 ? 'MODERATE' : 'LOW'
-      }
+      ...risk,
+      score: liveRiskScore,
+      level: liveRiskScore >= 81 ? 'CRITICAL' : liveRiskScore >= 61 ? 'HIGH' : liveRiskScore >= 36 ? 'MODERATE' : 'LOW'
+    }
     : null;
 
   return (
@@ -326,13 +378,12 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
         {toast && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
             className="fixed top-6 right-6 z-[200]">
-            <div className={`px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-sm font-bold border ${
-              toast.type === 'warning' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-              toast.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' :
-              'bg-emerald-50 text-emerald-700 border-emerald-200'
-            }`}>
+            <div className={`px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-sm font-bold border ${toast.type === 'warning' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                toast.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' :
+                  'bg-emerald-50 text-emerald-700 border-emerald-200'
+              }`}>
               {toast.type === 'warning' ? <AlertTriangle size={16} /> :
-               toast.type === 'error' ? <ShieldOff size={16} /> : <CheckCircle2 size={16} />}
+                toast.type === 'error' ? <ShieldOff size={16} /> : <CheckCircle2 size={16} />}
               {toast.message}
             </div>
           </motion.div>
@@ -418,7 +469,16 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
         </AnimatePresence>
 
         {/* Operational Control Console */}
-        <OperationalControlPanel overrides={overrides} onChange={onOverridesChange || (() => {})} />
+        <OperationalControlPanel 
+          overrides={overrides} 
+          onChange={(newOverrides) => {
+            if (replay?.status === 'playing') {
+              replay.controls.pause();
+            }
+            if (onOverridesChange) onOverridesChange(newOverrides);
+          }} 
+          replayStatus={replay?.status} 
+        />
 
         {/* A. Operational State */}
         <div className="vision-card glass-reflection p-6 relative overflow-hidden">
@@ -447,7 +507,7 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
                 </motion.div>
               )}
             </AnimatePresence>
-            
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 w-full">
               <MetricCard icon={Heart} label="Admissions" value={latestMetric?.total_admissions ?? '—'} trend="up" color="text-rose-500" bgColor="bg-rose-50" />
               <MetricCard icon={TrendingDown} label="Discharges" value={latestMetric?.total_discharges ?? '—'} trend="down" color="text-emerald-500" bgColor="bg-emerald-50" />
@@ -515,8 +575,8 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
                       <p className="text-xs font-bold text-slate-700">{p.name}</p>
                       <p className="text-[9px] font-mono text-slate-400">{p.code}</p>
                     </div>
-                    <button 
-                      onClick={() => handleActivate(p.id)} 
+                    <button
+                      onClick={() => handleActivate(p.id)}
                       disabled={actionLoading}
                       className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-indigo-600 transition-all disabled:opacity-50"
                     >
@@ -534,15 +594,15 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
 
       {/* RIGHT COLUMN: Audit Stream, Beds, Staffing */}
       <div className="lg:col-span-4 flex flex-col gap-5 min-w-0">
-        
+
         {/* D. Operational Audit Stream */}
         <div className="vision-card glass-reflection p-5 flex flex-col max-h-[300px]">
           <div className="flex items-center gap-2 mb-4 shrink-0">
             <AlertTriangle size={16} className="text-amber-500" />
             <h3 className="text-sm font-display font-bold text-slate-800">Operational Audit</h3>
-            {syntheticEvents.length > 0 && (
-              <span className="ml-auto px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-red-50 text-red-600 border border-red-200 animate-pulse">
-                {syntheticEvents.length} Live
+            {eventTimeline.length > 0 && (
+              <span className="ml-auto px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-200">
+                Live Timeline
               </span>
             )}
           </div>

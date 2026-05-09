@@ -20,8 +20,6 @@ import { DEFAULT_OVERRIDES } from './OperationalControlPanel';
 import { useOperationalSync } from '../../hooks/useOperationalSync';
 import { useReplayEngine } from '../../hooks/useReplayEngine';
 import ForecastChart from './ForecastChart';
-import KPIOverlay from './KPIOverlay';
-import SHAPPanel from './SHAPPanel';
 import Recommendations from './Recommendations';
 import DepartmentSection from './DepartmentSection';
 import WeatherWidget from './WeatherWidget';
@@ -93,6 +91,34 @@ const Dashboard = ({ onBack }) => {
     }
   }, [selectedDayIndex, dashboardData, scenario]);
 
+  // ── Unified BaseData ──────────────────────────────────────────────────────
+  // Merge live operationalSignal intelligence (from override controls) on top
+  // of the backend-derived baseData. This makes ALL downstream engines
+  // (Insights, Unit Pressure, Executive Briefing, etc.) consume a single
+  // coherent operational truth. When overrides are at baseline, the merge is
+  // a no-op since intelligenceConditions will reflect the same nominal state.
+  const unifiedBaseData = useMemo(() => {
+    if (!baseData) return null;
+    if (!operationalSignal?.intelligenceConditions) return baseData;
+    return {
+      ...baseData,
+      intelligence: {
+        ...(baseData.intelligence ?? {}),
+        conditions: {
+          ...(baseData.intelligence?.conditions ?? {}),
+          ...operationalSignal.intelligenceConditions,
+        },
+        escalation: operationalSignal.intelligenceConditions.escalation
+          ?? baseData.intelligence?.escalation,
+      },
+      metrics: {
+        ...(baseData.metrics ?? {}),
+        ...operationalSignal.intelligenceMetrics,
+      },
+    };
+  }, [baseData, operationalSignal?.intelligenceConditions, operationalSignal?.intelligenceMetrics]);
+
+
   // Map rolling week onto dashboard data (cycles through available ML days)
   const DAYS = rollingWeek.map((dayCtx, i) => ({
     label: dayCtx.dayShort,
@@ -102,8 +128,8 @@ const Dashboard = ({ onBack }) => {
     // ML data index wraps if fewer than 7 days returned from backend
     dataIndex: i % dashboardData.length,
   }));
-  
-  const risk = riskConfig[baseData?.risk] ?? riskConfig.Low;
+
+  const risk = riskConfig[unifiedBaseData?.risk ?? baseData?.risk] ?? riskConfig.Low;
 
   const handleMouseMove = (e) => {
     if (!containerRef.current) return;
@@ -163,9 +189,9 @@ const Dashboard = ({ onBack }) => {
         {/* AI Status pill */}
         <div className="hidden md:flex px-5 mb-4 w-full">
           <div className={`w-full px-4 py-3 rounded-2xl border flex items-center gap-3 transition-colors 
-            ${mode === 'simulator' ? 'bg-amber-50 border-amber-100' : 
+            ${mode === 'simulator' ? 'bg-amber-50 border-amber-100' :
               mode === 'integration' ? 'bg-blue-50 border-blue-100' :
-              mode === 'readiness' ? 'bg-purple-50 border-purple-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                mode === 'readiness' ? 'bg-purple-50 border-purple-100' : 'bg-emerald-50 border-emerald-100'}`}>
             <div className="relative w-2.5 h-2.5">
               <div className={`absolute inset-0 rounded-full animate-ping 
                 ${mode === 'simulator' ? 'bg-amber-500' : mode === 'integration' ? 'bg-blue-500' :
@@ -179,13 +205,13 @@ const Dashboard = ({ onBack }) => {
                 ${mode === 'simulator' ? 'text-amber-700' : mode === 'integration' ? 'text-blue-700' :
                   mode === 'readiness' ? 'text-purple-700' : 'text-emerald-700'}`}>
                 {mode === 'simulator' ? 'Sim Engine' : mode === 'integration' ? 'Data Sync' :
-                 mode === 'readiness' ? 'Ops Readiness' : 'Model Live'}
+                  mode === 'readiness' ? 'Ops Readiness' : 'Model Live'}
               </p>
               <p className={`text-[9px] font-medium 
                 ${mode === 'simulator' ? 'text-amber-600' : mode === 'integration' ? 'text-blue-600' :
                   mode === 'readiness' ? 'text-purple-600' : 'text-emerald-600'}`}>
-                {mode === 'integration' ? 'All systems active' : 
-                 mode === 'readiness' ? 'Risk assessment live' : `v2.4 · ${baseData?.confidence}% acc.`}
+                {mode === 'integration' ? 'All systems active' :
+                  mode === 'readiness' ? 'Risk assessment live' : `v2.4 · ${baseData?.confidence}% acc.`}
               </p>
             </div>
           </div>
@@ -213,9 +239,9 @@ const Dashboard = ({ onBack }) => {
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   {mode === 'insights' ? liveLabel :
-                   mode === 'simulator' ? 'Scenario Modeling Active' :
-                   mode === 'readiness' ? 'Operational Command Layer' :
-                   'Infrastructure Layer'}
+                    mode === 'simulator' ? 'Scenario Modeling Active' :
+                      mode === 'readiness' ? 'Operational Command Layer' :
+                        'Infrastructure Layer'}
                 </span>
                 <span className="text-slate-200">·</span>
                 {/* Live escalation posture — shows across all modes when overrides active */}
@@ -233,7 +259,7 @@ const Dashboard = ({ onBack }) => {
                   </motion.span>
                 ) : (
                   <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors 
-                    ${mode === 'simulator' ? 'bg-amber-100/50 text-amber-700 border border-amber-200/60' : 
+                    ${mode === 'simulator' ? 'bg-amber-100/50 text-amber-700 border border-amber-200/60' :
                       mode === 'integration' ? 'bg-blue-100/50 text-blue-700 border border-blue-200/60' : risk.badge}`}>
                     {mode === 'simulator' ? 'Simulation Environment' : mode === 'integration' ? 'Infrastructure Layer' : `${baseData?.risk ?? 'Low'} Risk · ${selectedDayCtx.operationalLabel}`}
                   </span>
@@ -252,7 +278,7 @@ const Dashboard = ({ onBack }) => {
                 <User size={15} className="text-white" />
               </div>
               <div className="hidden md:block">
-                <p className="text-xs font-bold text-slate-800">Dr. Sarah Jenkins</p>
+                <p className="text-xs font-bold text-slate-800">Sunny Satwik</p>
                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Chief Admin</p>
               </div>
             </div>
@@ -296,10 +322,10 @@ const Dashboard = ({ onBack }) => {
 
         {/* ── Grid Content ── */}
         {mode === 'integration' ? (
-          <IntegrationHub operationalState={baseData} testMode={testMode} />
+          <IntegrationHub operationalState={unifiedBaseData} testMode={testMode} />
         ) : mode === 'simulator' ? (
           <ScenarioSimulator
-            baseData={baseData}
+            baseData={unifiedBaseData}
             allData={dashboardData}
             selectedDayIndex={selectedDayIndex}
             selectedDayCtx={selectedDayCtx}
@@ -314,9 +340,9 @@ const Dashboard = ({ onBack }) => {
           />
         ) : (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start auto-rows-min min-w-0 pb-20">
-            {/* LEFT COLUMN: Forecast, Recommendations, Departments */}
-            <div className="lg:col-span-7 flex flex-col gap-5 min-w-0 h-fit justify-start">
-              
+            {/* LEFT COLUMN: Forecast */}
+            <div className="lg:col-span-8 flex flex-col gap-5 min-w-0 h-fit justify-start">
+
               {/* Forecast Chart Card */}
               <motion.div
                 style={{ x: mousePos.x * 12, y: mousePos.y * 8 }}
@@ -331,7 +357,7 @@ const Dashboard = ({ onBack }) => {
                   <div className="flex flex-col items-end gap-1.5">
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold ${risk.badge}`}>
                       <AlertTriangle size={12} />
-                      {baseData?.risk ?? 'Low'} Risk
+                      {unifiedBaseData?.risk ?? 'Low'} Risk
                     </div>
                     <p className="text-[9px] text-slate-400 font-medium">{selectedDayCtx.operationalLabel}</p>
                   </div>
@@ -347,36 +373,27 @@ const Dashboard = ({ onBack }) => {
 
                 {/* Micro analytics strip */}
                 <div className="grid grid-cols-4 gap-3 mt-4">
-                  <MicroStat label="Today's Load" value={`${baseData?.load ?? 0}%`} up />
-                  <MicroStat label="Patients" value={baseData?.expectedPatients ?? 0} up />
-                  <MicroStat label="Confidence" value={`${baseData?.confidence ?? 0}%`} neutral />
+                  <MicroStat label="Today's Load" value={`${unifiedBaseData?.load ?? 0}%`} up />
+                  <MicroStat label="Patients" value={unifiedBaseData?.expectedPatients ?? 0} up />
+                  <MicroStat label="Confidence" value={`${unifiedBaseData?.confidence ?? 0}%`} neutral />
                   <MicroStat
                     label="vs Baseline"
-                    value={baseData?.load != null ? `${baseData.load > 65 ? '+' : ''}${(baseData.load - 65).toFixed(1)}%` : '—'}
-                    up={baseData?.load != null && baseData.load > 65}
-                    neutral={baseData?.load == null}
+                    value={unifiedBaseData?.load != null ? `${unifiedBaseData.load > 65 ? '+' : ''}${(unifiedBaseData.load - 65).toFixed(1)}%` : '—'}
+                    up={unifiedBaseData?.load != null && unifiedBaseData.load > 65}
+                    neutral={unifiedBaseData?.load == null}
                   />
                 </div>
               </motion.div>
 
-              {/* AI Directives */}
-              <div className="min-w-0 h-fit shrink-0">
-                <Recommendations baseData={baseData} />
-              </div>
-
-              {/* Additional Analytics */}
-              <div className="min-w-0 h-fit shrink-0">
-                <DepartmentSection baseData={baseData} />
-              </div>
             </div>
 
-            {/* RIGHT COLUMN: KPI Stack, SHAP */}
-            <div className="lg:col-span-5 flex flex-col gap-5 min-w-0 h-fit justify-start">
+            {/* RIGHT COLUMN: Predictive Intelligence, Unit Pressure */}
+            <div className="lg:col-span-4 flex flex-col gap-5 min-w-0 h-fit justify-start">
               <div className="min-w-0 h-fit shrink-0">
-                <KPIOverlay data={baseData} />
+                <Recommendations baseData={unifiedBaseData} />
               </div>
               <div className="min-w-0 h-fit shrink-0">
-                <SHAPPanel data={baseData} />
+                <DepartmentSection baseData={unifiedBaseData} />
               </div>
             </div>
 
@@ -408,13 +425,11 @@ const Dashboard = ({ onBack }) => {
                   <motion.div
                     animate={{ scale: [1, 1.3, 1] }}
                     transition={{ duration: 1.2, repeat: Infinity }}
-                    className={`w-2 h-2 rounded-full ${
-                      operationalSignal.operationalState.escalationRisk === 'critical' ? 'bg-red-500' : 'bg-orange-400'
-                    }`}
+                    className={`w-2 h-2 rounded-full ${operationalSignal.operationalState.escalationRisk === 'critical' ? 'bg-red-500' : 'bg-orange-400'
+                      }`}
                   />
-                  <span className={`text-xs font-black uppercase tracking-widest ${
-                    operationalSignal.operationalState.escalationRisk === 'critical' ? 'text-red-700' : 'text-orange-700'
-                  }`}>
+                  <span className={`text-xs font-black uppercase tracking-widest ${operationalSignal.operationalState.escalationRisk === 'critical' ? 'text-red-700' : 'text-orange-700'
+                    }`}>
                     {operationalSignal.operationalState.escalationRisk === 'critical' ? 'Critical Escalation' : 'Elevated Posture'}
                   </span>
                 </div>
@@ -449,11 +464,10 @@ const Dashboard = ({ onBack }) => {
               <div className="w-px h-5 bg-slate-200" />
               <button
                 onClick={() => setMode('readiness')}
-                className={`text-xs font-bold flex items-center gap-1 transition-colors ${
-                  operationalSignal?.operationalState?.escalationRisk === 'critical'
+                className={`text-xs font-bold flex items-center gap-1 transition-colors ${operationalSignal?.operationalState?.escalationRisk === 'critical'
                     ? 'text-red-600 hover:text-red-700'
                     : 'text-blue-600 hover:text-blue-700'
-                }`}
+                  }`}
               >
                 {operationalSignal?.operationalState?.escalationRisk === 'critical' ? 'View Escalation' : 'Run Protocols'} <ArrowUpRight size={12} />
               </button>

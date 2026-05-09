@@ -63,23 +63,28 @@ const ControlSlider = ({ label, icon: Icon, value, min, max, step = 1, unit, col
           {displayVal}
         </span>
       </div>
-      <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
-        <motion.div
-          className={`absolute left-0 top-0 h-full rounded-full bg-gradient-to-r ${trackColor}`}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.15 }}
+      {/* Track + input share a single relative container so the input is correctly overlaid */}
+      <div className="relative" style={{ height: '20px' }}>
+        {/* Visual track — centred vertically inside the hit zone */}
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 bg-slate-100 rounded-full overflow-hidden">
+          <motion.div
+            className={`absolute left-0 top-0 h-full rounded-full bg-gradient-to-r ${trackColor}`}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.15 }}
+          />
+        </div>
+        {/* Invisible range input — fills the entire hit zone, sits above the track */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          style={{ margin: 0 }}
         />
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={e => onChange(Number(e.target.value))}
-        className="w-full h-1 opacity-0 absolute cursor-pointer"
-        style={{ marginTop: '-20px', position: 'relative' }}
-      />
     </div>
   );
 };
@@ -110,14 +115,21 @@ const WeatherToggle = ({ value, onChange }) => (
   </div>
 );
 
-const OperationalControlPanel = ({ overrides, onChange }) => {
+const OperationalControlPanel = ({ overrides, onChange, replayStatus }) => {
   const [expanded, setExpanded] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
 
   const set = useCallback((key, val) => {
+    setRecalculating(true);
     onChange({ ...overrides, [key]: val });
+    setTimeout(() => setRecalculating(false), 800);
   }, [overrides, onChange]);
 
-  const reset = () => onChange(DEFAULT_OVERRIDES);
+  const reset = () => {
+    setRecalculating(true);
+    onChange(DEFAULT_OVERRIDES);
+    setTimeout(() => setRecalculating(false), 800);
+  };
 
   // Derive current posture label
   const scenario = overridesToScenario(overrides);
@@ -146,20 +158,45 @@ const OperationalControlPanel = ({ overrides, onChange }) => {
         className="w-full flex items-center justify-between px-5 py-4 relative z-10"
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-indigo-50">
+          <div className="p-2 rounded-xl bg-indigo-50 relative">
             <SlidersHorizontal size={15} className="text-indigo-600" />
+            {recalculating && (
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+              </span>
+            )}
           </div>
           <div className="text-left">
             <p className="text-sm font-display font-bold text-slate-800">Operational Control Console</p>
-            <p className="text-[9px] text-slate-400 uppercase tracking-widest font-bold mt-0.5">
-              Live Simulation Override Layer
+            <p className={`text-[9px] uppercase tracking-widest font-bold mt-0.5 transition-colors ${
+              recalculating ? 'text-indigo-500' : 
+              replayStatus === 'playing' ? 'text-purple-500' : 
+              replayStatus === 'paused' ? 'text-amber-500' :
+              'text-slate-400'
+            }`}>
+              {recalculating ? 'Propagating live overrides...' : 
+               replayStatus === 'playing' ? 'Replay driving operational state' :
+               replayStatus === 'paused' ? 'Replay paused — manual intervention active' :
+               'Live Simulation Override Layer'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${postureColor}`}>
-            {postureLabel}
+          {replayStatus === 'playing' ? (
+             <span className="text-[9px] font-black uppercase tracking-widest text-purple-500 mr-1 animate-pulse">
+               Replay Auto
+             </span>
+          ) : stressLevel > 0 && !recalculating && (
+             <span className="text-[9px] font-black uppercase tracking-widest text-indigo-500 mr-1 animate-pulse">
+               Manual Override
+             </span>
+          )}
+          <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border transition-colors ${
+            recalculating ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : postureColor
+          }`}>
+            {recalculating ? 'RECALCULATING' : postureLabel}
           </span>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
             <ChevronDown size={16} className="text-slate-400" />
@@ -180,13 +217,24 @@ const OperationalControlPanel = ({ overrides, onChange }) => {
           >
             <div className="px-5 pb-5 space-y-5 relative z-10 border-t border-slate-100">
               {/* Quick posture descriptor */}
-              <div className="flex items-center justify-between pt-4">
-                <div className="flex items-center gap-2">
-                  {stressLevel >= 3
-                    ? <AlertTriangle size={12} className="text-orange-500" />
-                    : <CheckCircle2 size={12} className="text-emerald-500" />}
-                  <span className="text-[10px] text-slate-500 font-medium">
-                    {stressLevel >= 6 ? 'Extreme operational stress applied — surge cascade expected.' :
+              <div className="flex items-center justify-between pt-4 relative">
+                {recalculating && (
+                  <motion.div 
+                    initial={{ x: '-100%' }} animate={{ x: '100%' }} transition={{ duration: 0.8, ease: 'linear' }}
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent pointer-events-none"
+                  />
+                )}
+                <div className="flex items-center gap-2 relative z-10">
+                  {recalculating ? (
+                    <Zap size={12} className="text-indigo-500 animate-pulse" />
+                  ) : stressLevel >= 3 ? (
+                    <AlertTriangle size={12} className="text-orange-500" />
+                  ) : (
+                    <CheckCircle2 size={12} className="text-emerald-500" />
+                  )}
+                  <span className={`text-[10px] font-medium transition-colors ${recalculating ? 'text-indigo-600' : 'text-slate-500'}`}>
+                    {recalculating ? 'Recalculating intelligence and readiness metrics...' :
+                     stressLevel >= 6 ? 'Extreme operational stress applied — surge cascade expected.' :
                      stressLevel >= 3 ? 'Moderate overrides active — monitoring for escalation triggers.' :
                      stressLevel >= 1 ? 'Minor overrides applied — operational baseline intact.' :
                      'No overrides active — system running on raw telemetry.'}
