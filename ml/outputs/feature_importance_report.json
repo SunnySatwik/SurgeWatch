@@ -1,0 +1,130 @@
+{
+  "top_predictive_features": [
+    {
+      "rank": 1,
+      "feature": "estimated_wait_time",
+      "combined_score": 0.036612
+    },
+    {
+      "rank": 2,
+      "feature": "patients_prev_day",
+      "combined_score": 0.033869
+    },
+    {
+      "rank": 3,
+      "feature": "days_until_festival",
+      "combined_score": 0.032901
+    },
+    {
+      "rank": 4,
+      "feature": "humidity_delta",
+      "combined_score": 0.026323
+    },
+    {
+      "rank": 5,
+      "feature": "patients_3day_avg",
+      "combined_score": 0.025006
+    },
+    {
+      "rank": 6,
+      "feature": "patient_growth_rate",
+      "combined_score": 0.024209
+    },
+    {
+      "rank": 7,
+      "feature": "emergency_load_index",
+      "combined_score": 0.023842
+    },
+    {
+      "rank": 8,
+      "feature": "respiratory_alert",
+      "combined_score": 0.022375
+    },
+    {
+      "rank": 9,
+      "feature": "patients_7day_avg",
+      "combined_score": 0.021413
+    },
+    {
+      "rank": 10,
+      "feature": "humidity",
+      "combined_score": 0.020796
+    },
+    {
+      "rank": 11,
+      "feature": "rainfall",
+      "combined_score": 0.020404
+    },
+    {
+      "rank": 12,
+      "feature": "humidity_trend",
+      "combined_score": 0.0203
+    },
+    {
+      "rank": 13,
+      "feature": "festival_intensity_score",
+      "combined_score": 0.018688
+    },
+    {
+      "rank": 14,
+      "feature": "estimated_bed_occupancy",
+      "combined_score": 0.018613
+    },
+    {
+      "rank": 15,
+      "feature": "cumulative_rainfall_3day",
+      "combined_score": 0.017924
+    }
+  ],
+  "native_importance": {
+    "days_until_festival": 0.051848,
+    "estimated_wait_time": 0.051678,
+    "patients_prev_day": 0.04719,
+    "humidity_delta": 0.044482,
+    "festival_intensity_score": 0.042334,
+    "estimated_bed_occupancy": 0.041165,
+    "resource_utilization_score": 0.040328,
+    "patients_3day_avg": 0.040256,
+    "emergency_load_index": 0.040186,
+    "temperature": 0.040115,
+    "rolling_std_patients": 0.039438,
+    "patient_growth_rate": 0.038937,
+    "patients_7day_avg": 0.036532,
+    "respiratory_alert": 0.036346,
+    "humidity": 0.035367
+  },
+  "shap_importance": {
+    "estimated_wait_time": 0.021546,
+    "respiratory_alert": 0.021104,
+    "patients_prev_day": 0.020548,
+    "festival_intensity_score": 0.018102,
+    "estimated_bed_occupancy": 0.016727,
+    "respiratory_risk_score": 0.015136,
+    "rainfall": 0.014048,
+    "days_until_festival": 0.013953,
+    "patients_3day_avg": 0.009756,
+    "rainfall_prev_day": 0.009585,
+    "patient_growth_rate": 0.009481,
+    "resource_utilization_score": 0.009104,
+    "temperature": 0.008872,
+    "cumulative_rainfall_3day": 0.008578,
+    "festival": 0.008555
+  },
+  "permutation_importance": {
+    "rainfall": 0.012236,
+    "respiratory_alert": 0.009677,
+    "rainfall_intensity": 0.006269,
+    "staff_pressure_index": 0.002693,
+    "respiratory_risk_score": 0.001474,
+    "rolling_std_patients": 0.000945,
+    "day_of_week": 0.000834,
+    "temperature": 0.000532,
+    "holiday_travel_factor": 0.0,
+    "summer_heatwave": 0.0,
+    "rainfall_prev_day": -0.001293,
+    "monsoon_season": -0.00173,
+    "is_weekend": -0.001969,
+    "flu_season": -0.002046,
+    "estimated_bed_occupancy": -0.002053
+  }
+}

@@ -1,7 +1,7 @@
 """
 SurgeWatch Live Prediction Script
 
-Lightweight prediction-only script. Loads the trained model and outputs
+Lightweight prediction-only script. Loads the trained classifier and outputs
 predictions from a JSON feature vector. No training, no SHAP.
 
 Usage:
@@ -13,87 +13,64 @@ import sys
 import json
 import joblib
 import numpy as np
+import os
 from utils import get_model_path
 
-FEATURE_ORDER = [
-    'humidity', 'temperature', 'rainfall', 'festival',
-    'respiratory_alert', 'baseline_patients', 'day_of_week',
-    'month', 'is_weekend', 'humidity_drop', 'days_until_festival',
-    'rolling_patient_average', 'humidity_delta', 'rainfall_intensity',
-    'monday_adjacent', 'seasonal_index'
-]
-
-# Sensible defaults for missing features
-FEATURE_DEFAULTS = {
-    'humidity': 65,
-    'temperature': 28,
-    'rainfall': 0,
-    'festival': 0,
-    'respiratory_alert': 0,
-    'baseline_patients': 110,
-    'day_of_week': 2,
-    'month': 5,
-    'is_weekend': 0,
-    'humidity_drop': 0,
-    'days_until_festival': 30,
-    'rolling_patient_average': 110,
-    'humidity_delta': 0,
-    'rainfall_intensity': 0,
-    'monday_adjacent': 0,
-    'seasonal_index': 0.3
-}
-
-
-def load_model():
-    """Load the trained XGBoost model."""
-    model_path = get_model_path('xgboost_model.pkl')
+def load_assets():
+    """Load the trained model, feature order, and class mapping."""
     try:
-        return joblib.load(model_path)
-    except FileNotFoundError:
-        print(json.dumps({"error": "Model not found. Run train_model.py first."}))
+        model = joblib.load(get_model_path('surge_classifier_model.pkl'))
+        with open(get_model_path('model_features.json'), 'r') as f:
+            features = json.load(f)
+        classes = np.load(get_model_path('label_encoder_classes.npy'))
+        return model, features, classes
+    except FileNotFoundError as e:
+        print(json.dumps({"error": f"Model assets not found: {str(e)}"}))
         sys.exit(1)
 
-
-def build_feature_vector(features_dict):
+def build_feature_vector(features_dict, feature_order):
     """Build a numpy array in the correct feature order, filling defaults for missing."""
     vector = []
-    for feat in FEATURE_ORDER:
-        value = features_dict.get(feat, FEATURE_DEFAULTS.get(feat, 0))
+    for feat in feature_order:
+        value = features_dict.get(feat, 0)
         try:
             vector.append(float(value))
         except (ValueError, TypeError):
-            vector.append(float(FEATURE_DEFAULTS.get(feat, 0)))
+            vector.append(0.0)
     return np.array([vector])
-
 
 def predict(features_dict):
     """Run prediction and return result as dict."""
-    model = load_model()
-    X = build_feature_vector(features_dict)
-    prediction = model.predict(X)[0]
-    predicted_volume = int(round(prediction))
+    model, feature_order, classes = load_assets()
     
-    # Calculate risk level
-    baseline = features_dict.get('baseline_patients', 110)
-    ratio = predicted_volume / max(1, baseline)
+    X = build_feature_vector(features_dict, feature_order)
     
-    if ratio > 1.3:
-        risk_level = "HIGH"
-    elif ratio > 1.15:
-        risk_level = "MEDIUM"
+    # Get probabilities
+    if hasattr(model, 'predict_proba'):
+        probs = model.predict_proba(X)[0]
     else:
-        risk_level = "LOW"
+        # Fallback if no probabilities (shouldn't happen with XGBoost/RF)
+        pred_idx = model.predict(X)[0]
+        probs = np.zeros(len(classes))
+        probs[pred_idx] = 1.0
+        
+    # Get highest probability class
+    pred_idx = np.argmax(probs)
+    risk_level = classes[pred_idx]
     
-    surge_probability = min(0.95, max(0.05, (ratio - 1.0) * 1.5))
+    # Calculate confidence / surge probability
+    # 'surge probability' could be represented as probability of HIGH or CRITICAL
+    high_idx = np.where(classes == 'HIGH')[0][0] if 'HIGH' in classes else 2
+    crit_idx = np.where(classes == 'CRITICAL')[0][0] if 'CRITICAL' in classes else 3
+    
+    surge_probability = float(probs[high_idx] + probs[crit_idx])
     
     return {
-        "predicted_volume": predicted_volume,
-        "baseline_volume": int(baseline),
-        "risk_level": risk_level,
+        "risk_level": str(risk_level),
         "surge_probability": round(surge_probability, 3),
-        "ratio": round(ratio, 3)
+        "confidence": round(float(probs[pred_idx]), 3),
+        "class_probabilities": {str(c): round(float(p), 3) for c, p in zip(classes, probs)}
     }
-
 
 if __name__ == "__main__":
     # Read features from --features arg or stdin
@@ -110,9 +87,9 @@ if __name__ == "__main__":
             features_json = sys.stdin.read().strip()
     
     if not features_json:
-        # Use defaults for demo
-        features_json = json.dumps(FEATURE_DEFAULTS)
-    
+        print(json.dumps({"error": "No features provided"}))
+        sys.exit(1)
+        
     try:
         features = json.loads(features_json)
     except json.JSONDecodeError as e:

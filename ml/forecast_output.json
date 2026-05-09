@@ -1,102 +1,188 @@
 {
   "hospital": "Shivamogga District Hospital",
-  "generated_at": "2026-05-06T23:47:43.979829Z",
+  "generated_at": "2026-05-10T01:15:05.217505Z",
+  "model_version": "v2.0-classification",
+  "overall_risk": "Moderate",
+  "confidence": 55.4,
   "forecast": [
     {
-      "date": "2024-04-25",
-      "day_label": "Thursday",
-      "predicted_volume": 111,
-      "baseline_volume": 111,
-      "surge_probability": 0.05,
-      "risk_level": "LOW",
-      "shap_factors": [
-        {
-          "label": "Normal seasonal baseline",
-          "value": 1.11
-        }
-      ]
-    },
-    {
-      "date": "2024-04-26",
-      "day_label": "Friday",
-      "predicted_volume": 110,
-      "baseline_volume": 110,
-      "surge_probability": 0.05,
-      "risk_level": "LOW",
-      "shap_factors": [
-        {
-          "label": "Normal seasonal baseline",
-          "value": 0.16
-        }
-      ]
-    },
-    {
-      "date": "2024-04-27",
-      "day_label": "Saturday",
-      "predicted_volume": 126,
-      "baseline_volume": 111,
-      "surge_probability": 0.2,
-      "risk_level": "LOW",
-      "shap_factors": [
-        {
-          "label": "Day of week",
-          "value": 10.15
-        }
-      ]
-    },
-    {
-      "date": "2024-04-28",
-      "day_label": "Sunday",
-      "predicted_volume": 120,
-      "baseline_volume": 106,
-      "surge_probability": 0.2,
-      "risk_level": "LOW",
-      "shap_factors": [
-        {
-          "label": "Day of week",
-          "value": 10.41
-        }
-      ]
-    },
-    {
-      "date": "2024-04-29",
-      "day_label": "Monday",
-      "predicted_volume": 105,
-      "baseline_volume": 104,
-      "surge_probability": 0.05,
-      "risk_level": "LOW",
-      "shap_factors": [
-        {
-          "label": "Normal seasonal baseline",
-          "value": 0.77
-        }
-      ]
-    },
-    {
-      "date": "2024-04-30",
-      "day_label": "Tuesday",
-      "predicted_volume": 107,
-      "baseline_volume": 107,
-      "surge_probability": 0.05,
-      "risk_level": "LOW",
-      "shap_factors": [
-        {
-          "label": "Normal seasonal baseline",
-          "value": 0.1
-        }
-      ]
-    },
-    {
-      "date": "2024-05-01",
+      "date": "2024-12-25",
       "day_label": "Wednesday",
-      "predicted_volume": 112,
-      "baseline_volume": 111,
-      "surge_probability": 0.05,
+      "predicted_volume": 135,
+      "baseline_volume": 112,
+      "surge_probability": 0.354,
       "risk_level": "LOW",
+      "risk": "Low",
+      "confidence": 38.0,
+      "class_probabilities": {
+        "LOW": 0.38,
+        "MEDIUM": 0.267,
+        "HIGH": 0.337,
+        "CRITICAL": 0.017
+      },
       "shap_factors": [
         {
-          "label": "Normal seasonal baseline",
-          "value": 1.33
+          "label": "Normal baseline conditions",
+          "value": 0.0,
+          "direction": "neutral"
+        }
+      ]
+    },
+    {
+      "date": "2024-12-26",
+      "day_label": "Thursday",
+      "predicted_volume": 129,
+      "baseline_volume": 113,
+      "surge_probability": 0.082,
+      "risk_level": "LOW",
+      "risk": "Low",
+      "confidence": 56.9,
+      "class_probabilities": {
+        "LOW": 0.569,
+        "MEDIUM": 0.349,
+        "HIGH": 0.077,
+        "CRITICAL": 0.005
+      },
+      "shap_factors": [
+        {
+          "label": "Normal baseline conditions",
+          "value": 0.0,
+          "direction": "neutral"
+        }
+      ]
+    },
+    {
+      "date": "2024-12-27",
+      "day_label": "Friday",
+      "predicted_volume": 122,
+      "baseline_volume": 108,
+      "surge_probability": 0.05,
+      "risk_level": "LOW",
+      "risk": "Low",
+      "confidence": 78.2,
+      "class_probabilities": {
+        "LOW": 0.782,
+        "MEDIUM": 0.2,
+        "HIGH": 0.018,
+        "CRITICAL": 0.0
+      },
+      "shap_factors": [
+        {
+          "label": "Estimated wait time",
+          "value": 0.061,
+          "direction": "increase"
+        },
+        {
+          "label": "Previous day hospital volume",
+          "value": 0.059,
+          "direction": "increase"
+        }
+      ]
+    },
+    {
+      "date": "2024-12-28",
+      "day_label": "Saturday",
+      "predicted_volume": 119,
+      "baseline_volume": 109,
+      "surge_probability": 0.05,
+      "risk_level": "LOW",
+      "risk": "Low",
+      "confidence": 77.4,
+      "class_probabilities": {
+        "LOW": 0.774,
+        "MEDIUM": 0.182,
+        "HIGH": 0.04,
+        "CRITICAL": 0.004
+      },
+      "shap_factors": [
+        {
+          "label": "Estimated wait time",
+          "value": 0.068,
+          "direction": "increase"
+        },
+        {
+          "label": "Previous day hospital volume",
+          "value": 0.062,
+          "direction": "increase"
+        },
+        {
+          "label": "IDSP respiratory alert",
+          "value": 0.056,
+          "direction": "increase"
+        }
+      ]
+    },
+    {
+      "date": "2024-12-29",
+      "day_label": "Sunday",
+      "predicted_volume": 138,
+      "baseline_volume": 113,
+      "surge_probability": 0.222,
+      "risk_level": "LOW",
+      "risk": "Low",
+      "confidence": 40.9,
+      "class_probabilities": {
+        "LOW": 0.409,
+        "MEDIUM": 0.368,
+        "HIGH": 0.213,
+        "CRITICAL": 0.009
+      },
+      "shap_factors": [
+        {
+          "label": "IDSP respiratory alert",
+          "value": -0.153,
+          "direction": "decrease"
+        },
+        {
+          "label": "Respiratory risk conditions",
+          "value": -0.058,
+          "direction": "decrease"
+        }
+      ]
+    },
+    {
+      "date": "2024-12-30",
+      "day_label": "Monday",
+      "predicted_volume": 141,
+      "baseline_volume": 110,
+      "surge_probability": 0.188,
+      "risk_level": "LOW",
+      "risk": "Low",
+      "confidence": 47.7,
+      "class_probabilities": {
+        "LOW": 0.477,
+        "MEDIUM": 0.336,
+        "HIGH": 0.134,
+        "CRITICAL": 0.054
+      },
+      "shap_factors": [
+        {
+          "label": "Normal baseline conditions",
+          "value": 0.0,
+          "direction": "neutral"
+        }
+      ]
+    },
+    {
+      "date": "2024-12-31",
+      "day_label": "Tuesday",
+      "predicted_volume": 127,
+      "baseline_volume": 109,
+      "surge_probability": 0.219,
+      "risk_level": "LOW",
+      "risk": "Low",
+      "confidence": 48.6,
+      "class_probabilities": {
+        "LOW": 0.486,
+        "MEDIUM": 0.295,
+        "HIGH": 0.172,
+        "CRITICAL": 0.047
+      },
+      "shap_factors": [
+        {
+          "label": "Normal baseline conditions",
+          "value": 0.0,
+          "direction": "neutral"
         }
       ]
     }
@@ -108,6 +194,10 @@
     },
     {
       "name": "General Ward",
+      "risk_level": "MEDIUM"
+    },
+    {
+      "name": "ICU",
       "risk_level": "MEDIUM"
     }
   ]

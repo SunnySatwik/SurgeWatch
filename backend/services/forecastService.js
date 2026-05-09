@@ -3,12 +3,10 @@
  * 
  * Orchestrates live prediction by:
  * 1. Reading latest operational metrics from the database
- * 2. Constructing a feature vector matching the ML model's input
+ * 2. Constructing a feature vector matching the new ML classification model's input
  * 3. Calling the Python predict.py script
  * 4. Storing predictions in the forecasts table
  * 5. Returning predictions to the dashboard
- * 
- * IMPORTANT: This does NOT retrain the model. It uses the trained model as-is.
  */
 
 const { execSync } = require('child_process');
@@ -20,93 +18,109 @@ const PREDICT_SCRIPT = path.join(ML_DIR, 'predict.py');
 
 /**
  * Build a feature vector from the latest operational state.
- * Maps database values to the exact features the XGBoost model expects.
- * 
- * @param {number} hospitalId
- * @param {object} overrides - Optional manual overrides for features
- * @returns {object} Feature vector
+ * Maps database values to the exact features the new ML model expects.
  */
 function buildFeatureVector(hospitalId = 1, overrides = {}) {
-    // Get latest operational metrics
-    const latestMetrics = db.get(
-        'SELECT * FROM operational_metrics WHERE hospital_id = ? ORDER BY timestamp DESC LIMIT 1',
+    // Get latest and historical metrics
+    const metrics = db.query(
+        'SELECT * FROM operational_metrics WHERE hospital_id = ? ORDER BY timestamp DESC LIMIT 8',
+        [hospitalId]
+    );
+    
+    const weather = db.query(
+        'SELECT * FROM weather_context WHERE hospital_id = ? ORDER BY timestamp DESC LIMIT 4',
         [hospitalId]
     );
 
-    // Get latest weather
-    const latestWeather = db.get(
-        'SELECT * FROM weather_context WHERE hospital_id = ? ORDER BY timestamp DESC LIMIT 1',
-        [hospitalId]
-    );
-
-    // Get previous weather for delta calculation
-    const prevWeather = db.get(
-        'SELECT * FROM weather_context WHERE hospital_id = ? ORDER BY timestamp DESC LIMIT 1 OFFSET 1',
-        [hospitalId]
-    );
-
-    // Get latest lab signals for respiratory alert
     const latestLab = db.get(
         `SELECT * FROM lab_signals WHERE hospital_id = ? AND test_type = 'respiratory_panel' ORDER BY timestamp DESC LIMIT 1`,
         [hospitalId]
     );
 
-    // Get rolling average (last 7 metrics)
-    const rollingMetrics = db.query(
-        'SELECT total_admissions FROM operational_metrics WHERE hospital_id = ? ORDER BY timestamp DESC LIMIT 7',
-        [hospitalId]
-    );
-    const rollingAvg = rollingMetrics.length > 0
-        ? rollingMetrics.reduce((sum, m) => sum + m.total_admissions, 0) / rollingMetrics.length
-        : 110;
-
     // Current date info
     const now = new Date();
-    const dayOfWeek = now.getDay(); // 0=Sunday
+    const dayOfWeek = now.getDay();
     const month = now.getMonth() + 1;
     const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6) ? 1 : 0;
     const mondayAdjacent = (dayOfWeek === 0 || dayOfWeek === 1 || dayOfWeek === 5) ? 1 : 0;
+    
+    // ISO week of year calculation
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    const weekOfYear = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
 
-    // Seasonal index (monsoon June-Sept = high, winter Nov-Feb = moderate)
-    let seasonalIndex = 0.3;
-    if (month >= 6 && month <= 9) seasonalIndex = 0.8;
-    else if (month >= 11 || month <= 2) seasonalIndex = 0.6;
+    const quarter = Math.floor((month + 2) / 3);
+    const fluSeason = [11, 12, 1, 2].includes(month) ? 1 : 0;
+    const monsoonSeason = [6, 7, 8, 9].includes(month) ? 1 : 0;
 
-    // Humidity delta
-    const humidityDelta = prevWeather && latestWeather
-        ? Math.abs((latestWeather.humidity || 65) - (prevWeather.humidity || 65))
-        : 0;
+    // Latest states
+    const latestM = metrics[0] || {};
+    const prevM = metrics[1] || {};
+    const latestW = weather[0] || {};
+    const prevW = weather[1] || {};
 
-    // Humidity drop (>15% decrease)
-    const humidityDrop = prevWeather && latestWeather
-        ? ((prevWeather.humidity || 65) - (latestWeather.humidity || 65) > 15 ? 1 : 0)
-        : 0;
+    // Patient lag & rolling averages
+    const baselinePatients = 110;
+    const patientsPrevDay = prevM.total_admissions || baselinePatients;
+    
+    const metrics3d = metrics.slice(1, 4);
+    const metrics7d = metrics.slice(1, 8);
+    
+    const avg = (arr) => arr.length ? arr.reduce((sum, m) => sum + (m.total_admissions || baselinePatients), 0) / arr.length : baselinePatients;
+    const patients3dayAvg = avg(metrics3d);
+    const patients7dayAvg = avg(metrics7d);
+    
+    const patientGrowthRate = patients7dayAvg > 0 ? (patientsPrevDay - patients7dayAvg) / patients7dayAvg : 0;
+    
+    // Rolling std
+    const std = (arr) => {
+        if(arr.length < 2) return 0;
+        const m = avg(arr);
+        return Math.sqrt(arr.reduce((sq, val) => sq + Math.pow((val.total_admissions || baselinePatients) - m, 2), 0) / (arr.length - 1));
+    };
+    const rollingStdPatients = std(metrics7d);
 
-    // Respiratory alert from lab data
-    const respiratoryAlert = latestLab && latestLab.positivity_rate > 15 ? 1 : 0;
+    // Weather rolling
+    const rainfallPrevDay = prevW.rainfall_mm || 0;
+    const cumRainfall3day = weather.slice(0,3).reduce((sum, w) => sum + (w.rainfall_mm || 0), 0);
+    const humidityDrop = prevW.humidity && latestW.humidity && (prevW.humidity - latestW.humidity > 15) ? 1 : 0;
+    const oldW = weather[3] || {};
+    const humidityTrend = (latestW.humidity || 65) - (oldW.humidity || 65);
 
-    // Festival detection (simplified — check if any recent festival flags exist)
-    // In production this would check a festival calendar
-    const festival = 0;
-    const daysUntilFestival = 30;
+    // Operational proxies
+    const estimatedBedOccupancy = Math.min(100, Math.max(40, (patients3dayAvg / 150) * 100));
+    const emergencyLoadIndex = patientGrowthRate * isWeekend * 10;
+    const staffPressureIndex = (estimatedBedOccupancy / 100) * (1 + isWeekend) * (1 + rollingStdPatients / 20);
 
     const features = {
-        humidity: latestWeather?.humidity || 65,
-        temperature: latestWeather?.temperature || 28,
-        rainfall: latestWeather?.rainfall_mm || 0,
-        festival: festival,
-        respiratory_alert: respiratoryAlert,
-        baseline_patients: latestMetrics?.total_admissions || 110,
         day_of_week: dayOfWeek,
         month: month,
         is_weekend: isWeekend,
-        humidity_drop: humidityDrop,
-        days_until_festival: daysUntilFestival,
-        rolling_patient_average: Math.round(rollingAvg),
-        humidity_delta: Math.round(humidityDelta * 10) / 10,
-        rainfall_intensity: (latestWeather?.rainfall_mm || 0) > 5 ? 1 : 0,
+        week_of_year: weekOfYear,
+        quarter: quarter,
+        flu_season: fluSeason,
+        monsoon_season: monsoonSeason,
         monday_adjacent: mondayAdjacent,
-        seasonal_index: seasonalIndex,
+        temperature: latestW.temperature || 28,
+        humidity: latestW.humidity || 65,
+        rainfall: latestW.rainfall_mm || 0,
+        humidity_drop: humidityDrop,
+        festival: 0,
+        days_until_festival: 30,
+        respiratory_alert: latestLab && latestLab.positivity_rate > 15 ? 1 : 0,
+        patients_prev_day: patientsPrevDay,
+        patients_3day_avg: patients3dayAvg,
+        patients_7day_avg: patients7dayAvg,
+        patient_growth_rate: patientGrowthRate,
+        rolling_std_patients: rollingStdPatients,
+        rainfall_prev_day: rainfallPrevDay,
+        cumulative_rainfall_3day: cumRainfall3day,
+        humidity_trend: humidityTrend,
+        estimated_bed_occupancy: estimatedBedOccupancy,
+        emergency_load_index: emergencyLoadIndex,
+        staff_pressure_index: staffPressureIndex,
         ...overrides
     };
 
@@ -115,11 +129,6 @@ function buildFeatureVector(hospitalId = 1, overrides = {}) {
 
 /**
  * Run a live prediction using the Python ML model.
- * 
- * @param {number} hospitalId
- * @param {string} forecastDate - The date being predicted (ISO format)
- * @param {object} featureOverrides - Optional overrides
- * @returns {{ success: boolean, prediction: object }}
  */
 function runPrediction(hospitalId = 1, forecastDate = null, featureOverrides = {}) {
     const features = buildFeatureVector(hospitalId, featureOverrides);
@@ -131,7 +140,6 @@ function runPrediction(hospitalId = 1, forecastDate = null, featureOverrides = {
     }
 
     try {
-        // Call Python predict.py
         const featuresJson = JSON.stringify(features);
         const result = execSync(
             `python "${PREDICT_SCRIPT}" --features "${featuresJson.replace(/"/g, '\\"')}"`,
@@ -143,19 +151,26 @@ function runPrediction(hospitalId = 1, forecastDate = null, featureOverrides = {
         if (prediction.error) {
             return { success: false, error: prediction.error };
         }
+        
+        // Estimate predicted volume based on risk level for backward compatibility
+        const baseline = 110;
+        let predictedVolume = baseline;
+        if(prediction.risk_level === 'MEDIUM') predictedVolume = Math.round(baseline * 1.2);
+        if(prediction.risk_level === 'HIGH') predictedVolume = Math.round(baseline * 1.5);
+        if(prediction.risk_level === 'CRITICAL') predictedVolume = Math.round(baseline * 1.8);
 
         // Store prediction in database
         db.run(
             `INSERT INTO forecasts (hospital_id, forecast_date, predicted_volume, baseline_volume, surge_probability, risk_level, confidence_pct, feature_vector, model_version)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'v1.0-live')`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'v2.0-classification')`,
             [
                 hospitalId,
                 forecastDate,
-                prediction.predicted_volume,
-                prediction.baseline_volume,
+                predictedVolume,
+                baseline,
                 prediction.surge_probability,
                 prediction.risk_level,
-                90, // Default confidence for live predictions
+                prediction.confidence * 100, // percentage
                 JSON.stringify(features)
             ]
         );
@@ -164,6 +179,8 @@ function runPrediction(hospitalId = 1, forecastDate = null, featureOverrides = {
             success: true,
             prediction: {
                 ...prediction,
+                predicted_volume: predictedVolume,
+                baseline_volume: baseline,
                 forecast_date: forecastDate,
                 features_used: features,
                 generated_at: new Date().toISOString()
@@ -177,11 +194,6 @@ function runPrediction(hospitalId = 1, forecastDate = null, featureOverrides = {
 
 /**
  * Get the latest stored forecasts from the database.
- * Falls back to forecast_output.json if database is empty.
- * 
- * @param {number} hospitalId
- * @param {number} days - Number of forecast days to return
- * @returns {Array} Forecast data
  */
 function getForecasts(hospitalId = 1, days = 7) {
     const forecasts = db.query(
@@ -196,9 +208,7 @@ function getForecasts(hospitalId = 1, days = 7) {
             feature_vector: f.feature_vector ? JSON.parse(f.feature_vector) : null
         }));
     }
-
-    // Fallback: read from forecast_output.json
-    return null; // Let the route handler fall back to file-based reading
+    return null;
 }
 
 /**
@@ -217,7 +227,6 @@ function getLatestForecast(hospitalId = 1) {
             feature_vector: forecast.feature_vector ? JSON.parse(forecast.feature_vector) : null
         };
     }
-
     return null;
 }
 
