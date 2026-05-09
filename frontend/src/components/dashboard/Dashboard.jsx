@@ -429,19 +429,39 @@ const Dashboard = ({ onBack }) => {
                   <ForecastChart
                     data={dashboardData ?? []}
                     selectedIndex={selectedDayIndex}
+                    operationalSignal={operationalSignal}
                   />
                 </div>
 
-                {/* Micro analytics strip */}
+                {/* Micro analytics strip — operationally grounded hospital KPIs */}
                 <div className="grid grid-cols-4 gap-3 mt-4">
-                  <MicroStat label="Today's Load" value={`${unifiedBaseData?.load ?? 0}%`} up />
-                  <MicroStat label="Patients" value={unifiedBaseData?.expectedPatients ?? 0} up />
-                  <MicroStat label="Stability" value="Nominal" neutral />
                   <MicroStat
-                    label="vs Baseline"
-                    value={unifiedBaseData?.load != null ? `${unifiedBaseData.load > 65 ? '+' : ''}${(unifiedBaseData.load - 65).toFixed(1)}%` : '—'}
+                    label="Bed Utilization"
+                    value={unifiedBaseData?.load != null ? `${unifiedBaseData.load}%` : '—'}
                     up={unifiedBaseData?.load != null && unifiedBaseData.load > 65}
                     neutral={unifiedBaseData?.load == null}
+                  />
+                  <MicroStat
+                    label="Expected Intake"
+                    value={unifiedBaseData?.expectedPatients != null ? `${unifiedBaseData.expectedPatients} pts` : '—'}
+                    up={unifiedBaseData?.expectedPatients != null && unifiedBaseData.expectedPatients > 140}
+                    neutral={unifiedBaseData?.expectedPatients == null}
+                  />
+                  <MicroStat
+                    label="Operational Posture"
+                    value={
+                      operationalSignal?.operationalState?.escalationRisk === 'critical' ? 'Critical' :
+                      operationalSignal?.operationalState?.escalationRisk === 'elevated' ? 'Elevated' :
+                      operationalSignal?.intelligenceMetrics?.osi >= 50 ? 'Monitored' : 'Baseline'
+                    }
+                    up={operationalSignal?.operationalState?.escalationRisk !== 'low'}
+                    neutral={!operationalSignal || operationalSignal?.operationalState?.escalationRisk === 'low'}
+                  />
+                  <MicroStat
+                    label="Above Seasonal"
+                    value={unifiedBaseData?.load != null ? `${unifiedBaseData.load > 65 ? '+' : ''}${(unifiedBaseData.load - 65).toFixed(1)}%` : '—'}
+                    up={unifiedBaseData?.load != null && unifiedBaseData.load > 65}
+                    neutral={unifiedBaseData?.load == null || unifiedBaseData.load <= 65}
                   />
                 </div>
               </motion.div>
