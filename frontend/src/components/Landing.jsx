@@ -213,17 +213,6 @@ const DashboardPreview = () => {
         <p className="text-[10px] text-slate-500 font-medium leading-relaxed">ER critical. Recommend Phase II protocol.</p>
       </motion.div>
 
-      {/* Floating confidence chip */}
-      <motion.div
-        animate={{ x: mouse.x * -25, y: mouse.y * 20, z: 60 }}
-        className="absolute -bottom-6 -left-6 vision-glass px-4 py-3 rounded-xl shadow-xl shadow-slate-900/8 border-white/80 z-20 flex items-center gap-3"
-      >
-        <Sparkles size={14} className="text-indigo-500" />
-        <div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">AI Confidence</p>
-          <p className="text-sm font-mono font-bold text-slate-800">94.8%</p>
-        </div>
-      </motion.div>
     </div>
   );
 };

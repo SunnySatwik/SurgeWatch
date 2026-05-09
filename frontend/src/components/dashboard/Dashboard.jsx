@@ -275,7 +275,7 @@ const Dashboard = ({ onBack }) => {
                 ${mode === 'simulator' ? 'text-amber-600' : mode === 'integration' ? 'text-blue-600' :
                   mode === 'readiness' ? 'text-purple-600' : 'text-emerald-600'}`}>
                 {mode === 'integration' ? 'All systems active' :
-                  mode === 'readiness' ? 'Risk assessment live' : `v2.4 · ${baseData?.confidence}% acc.`}
+                  mode === 'readiness' ? 'Risk assessment live' : `v2.4 · Operational Sync`}
               </p>
             </div>
           </div>
@@ -375,13 +375,7 @@ const Dashboard = ({ onBack }) => {
               })}
             </div>
 
-            <div className="ml-auto flex items-center gap-2 vision-glass-light px-4 py-2 rounded-xl">
-              <Sparkles size={14} className="text-emerald-500" />
-              <span className="text-xs font-semibold text-slate-600 hidden sm:block">
-                AI Confidence: <span className="text-emerald-600 font-bold font-mono">{baseData?.confidence ?? 0}%</span>
-              </span>
             </div>
-          </div>
         )}
 
         {/* ── Grid Content ── */}
@@ -442,7 +436,7 @@ const Dashboard = ({ onBack }) => {
                 <div className="grid grid-cols-4 gap-3 mt-4">
                   <MicroStat label="Today's Load" value={`${unifiedBaseData?.load ?? 0}%`} up />
                   <MicroStat label="Patients" value={unifiedBaseData?.expectedPatients ?? 0} up />
-                  <MicroStat label="Confidence" value={`${unifiedBaseData?.confidence ?? 0}%`} neutral />
+                  <MicroStat label="Stability" value="Nominal" neutral />
                   <MicroStat
                     label="vs Baseline"
                     value={unifiedBaseData?.load != null ? `${unifiedBaseData.load > 65 ? '+' : ''}${(unifiedBaseData.load - 65).toFixed(1)}%` : '—'}
@@ -506,8 +500,6 @@ const Dashboard = ({ onBack }) => {
                   <span className="text-xs font-bold text-slate-700">{baseData?.risk ?? 'Low'} Surge · {selectedDayCtx.operationalLabel}</span>
                 </div>
               )}
-              <div className="w-px h-5 bg-slate-200" />
-              <span className="text-xs font-mono font-bold text-emerald-600">{baseData?.confidence ?? 0}% confidence</span>
               {/* Replay indicator */}
               {replay.status === REPLAY_STATUS.PLAYING && (
                 <>

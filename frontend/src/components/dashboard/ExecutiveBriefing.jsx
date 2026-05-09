@@ -90,7 +90,7 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
       Escalation Level: ${briefing.escalation}.
       Summary. ${briefing.summary}
       Key Operational Risks. ${briefing.risks.join('. ')}
-      Confidence Reasoning. ${briefing.outlook}
+      Operational Outlook. ${briefing.outlook}
       Recommended Actions. ${briefing.actions.join('. ')}
     `;
 
@@ -288,9 +288,9 @@ const ExecutiveBriefing = ({ scenario, simulatedData, onClose }) => {
                     </section>
                   </div>
 
-                  {/* Dynamic Confidence Reasoning */}
+                  {/* Dynamic Operational Outlook */}
                   <section className="p-5 rounded-2xl bg-slate-100/50 border border-slate-200/50">
-                    <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 mb-2">Confidence Reasoning</h3>
+                    <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 mb-2">Operational Outlook</h3>
                     <p className="text-sm font-medium text-slate-700 leading-relaxed italic">{briefing.outlook}</p>
                   </section>
 
