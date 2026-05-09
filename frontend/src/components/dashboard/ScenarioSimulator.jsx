@@ -78,7 +78,7 @@ const ComparisonMetric = ({ label, baseline, simulated, unit, invertAlert }) => 
   );
 };
 
-const ScenarioSimulator = ({ baseData, selectedDayCtx }) => {
+const ScenarioSimulator = ({ baseData, selectedDayCtx, operationalSignal }) => {
   const [draft, setDraft] = useState(PRESETS[0].config);
   const [active, setActive] = useState(PRESETS[0].config);
   const [simulatedData, setSimulatedData] = useState(null);
@@ -128,6 +128,16 @@ const ScenarioSimulator = ({ baseData, selectedDayCtx }) => {
 
   return (
     <>
+      {/* Live Override Context Banner */}
+      {operationalSignal && operationalSignal.operationalState.escalationRisk !== 'low' && (
+        <div className={`mb-3 px-4 py-2.5 rounded-2xl flex items-center gap-3 border text-xs font-bold
+          ${ operationalSignal.operationalState.escalationRisk === 'critical'
+              ? 'bg-red-50 text-red-700 border-red-200'
+              : 'bg-orange-50 text-orange-700 border-orange-200' }`}>
+          <ShieldAlert size={13} />
+          <span>Live Operational Override Active — Escalation: <span className="uppercase font-black">{operationalSignal.operationalState.escalationRisk}</span>. Simulation results incorporate current operational conditions.</span>
+        </div>
+      )}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 min-w-0 pb-20 font-sans">
          
          {/* LEFT: Scenario Engine Controls */}

@@ -15,11 +15,11 @@ export async function fetchRisk(hospitalId = 1) {
     return res.json();
 }
 
-export async function runRiskAssessment(hospitalId = 1) {
+export async function runRiskAssessment(scenarioModifiers = null, hospitalId = 1) {
     const res = await fetch(`${API_BASE}/risk/assess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hospitalId })
+        body: JSON.stringify({ hospitalId, scenarioModifiers })
     });
     if (!res.ok) throw new Error(`Risk assess error: ${res.statusText}`);
     return res.json();

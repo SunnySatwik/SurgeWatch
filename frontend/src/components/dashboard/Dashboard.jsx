@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Activity, LayoutDashboard,
   Home, User, Beaker,
   AlertTriangle, ArrowUpRight, Sparkles, Database,
-  Shield, Gauge
+  Shield, Gauge, Radio
 } from 'lucide-react';
 import { DASHBOARD_DATA as INITIAL_DATA } from '../../data/data';
+import { REPLAY_STATUS } from '../../hooks/useReplayEngine';
 import {
   getRollingWeek,
   getSelectedDayContext,
@@ -15,6 +16,9 @@ import {
   TEST_MODE_SHORTCUT,
 } from '../../utils/temporalEngine';
 import { simulateScenario } from '../../utils/intelligenceService';
+import { DEFAULT_OVERRIDES } from './OperationalControlPanel';
+import { useOperationalSync } from '../../hooks/useOperationalSync';
+import { useReplayEngine } from '../../hooks/useReplayEngine';
 import ForecastChart from './ForecastChart';
 import KPIOverlay from './KPIOverlay';
 import SHAPPanel from './SHAPPanel';
@@ -36,12 +40,16 @@ const riskConfig = {
 const Dashboard = ({ onBack }) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [mode, setMode] = useState('insights'); // 'insights' | 'simulator' | 'integration' | 'protocols' | 'readiness'
+  const [mode, setMode] = useState('insights');
   const containerRef = useRef(null);
   const [dashboardData, setDashboardData] = useState(INITIAL_DATA);
   const [baseData, setBaseData] = useState(null);
-  // Dev test mode — frozen telemetry + deterministic state
   const [testMode, setTestMode] = useState(false);
+
+  // Centralized override state — lifted here for platform-wide propagation
+  const [overrides, setOverrides] = useState(DEFAULT_OVERRIDES);
+  const { scenario, operationalSignal } = useOperationalSync(overrides);
+  const replay = useReplayEngine(setOverrides);
 
   // ── Rolling 7-day window derived once per render ──
   const rollingWeek = useMemo(() => getRollingWeek(), []);
@@ -75,15 +83,15 @@ const Dashboard = ({ onBack }) => {
   }, []);
 
   useEffect(() => {
-    // dataIndex wraps rolling-week index into available ML data length
     const dataIndex = dashboardData.length > 0 ? selectedDayIndex % dashboardData.length : 0;
     const raw = dashboardData?.[dataIndex] ?? dashboardData?.[0];
     if (raw) {
-      simulateScenario(raw, { weather: 0, crowd: 0, viral: 0, staffing: 0, traffic: 0 })
+      // Baseline always runs with active override scenario so insights stay coherent
+      simulateScenario(raw, scenario)
         .then(data => setBaseData(data))
         .catch(err => console.error('Failed to simulate baseline:', err));
     }
-  }, [selectedDayIndex, dashboardData]);
+  }, [selectedDayIndex, dashboardData, scenario]);
 
   // Map rolling week onto dashboard data (cycles through available ML days)
   const DAYS = rollingWeek.map((dayCtx, i) => ({
@@ -119,6 +127,14 @@ const Dashboard = ({ onBack }) => {
         <div className="ambient-glow glow-indigo w-[600px] h-[600px] bottom-0 right-0 opacity-40"
           style={{ transform: `translate(${mousePos.x * 30}px, ${mousePos.y * 30}px)` }} />
         <div className="ambient-glow glow-peach w-[400px] h-[400px] top-1/2 left-1/2 opacity-20" />
+        {/* Escalation pulse — appears when operational signal is critical */}
+        {operationalSignal?.operationalState?.escalationRisk === 'critical' && (
+          <motion.div
+            animate={{ opacity: [0, 0.06, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute inset-0 bg-red-500"
+          />
+        )}
       </div>
 
       {/* ── Sidebar ── */}
@@ -135,10 +151,13 @@ const Dashboard = ({ onBack }) => {
         </button>
 
         <nav className="flex-1 w-full px-3 space-y-1.5">
-          <NavItem icon={LayoutDashboard} label="Insights" active={mode === 'insights'} onClick={() => setMode('insights')} />
-          <NavItem icon={Beaker} label="Scenario Lab" active={mode === 'simulator'} onClick={() => setMode('simulator')} />
-          <NavItem icon={Database} label="Integration Hub" active={mode === 'integration'} onClick={() => setMode('integration')} />
-          <NavItem icon={Gauge} label="Readiness" active={mode === 'readiness'} onClick={() => setMode('readiness')} />
+          <NavItem icon={LayoutDashboard} label="Insights" seq="01" active={mode === 'insights'} onClick={() => setMode('insights')} />
+          <NavItem icon={Beaker} label="Scenario Lab" seq="02" active={mode === 'simulator'} onClick={() => setMode('simulator')} />
+          <NavItem icon={Database} label="Integration Hub" seq="03" active={mode === 'integration'} onClick={() => setMode('integration')} />
+          <NavItem icon={Gauge} label="Readiness" seq="04" active={mode === 'readiness'}
+            onClick={() => setMode('readiness')}
+            alert={operationalSignal?.operationalState?.escalationRisk === 'critical'}
+          />
         </nav>
 
         {/* AI Status pill */}
@@ -193,14 +212,32 @@ const Dashboard = ({ onBack }) => {
               </h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  {mode === 'insights' ? liveLabel : mode === 'simulator' ? 'Scenario Modeling Active' : 'Infrastructure Layer'}
+                  {mode === 'insights' ? liveLabel :
+                   mode === 'simulator' ? 'Scenario Modeling Active' :
+                   mode === 'readiness' ? 'Operational Command Layer' :
+                   'Infrastructure Layer'}
                 </span>
                 <span className="text-slate-200">·</span>
-                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors 
-                  ${mode === 'simulator' ? 'bg-amber-100/50 text-amber-700 border border-amber-200/60' : 
-                    mode === 'integration' ? 'bg-blue-100/50 text-blue-700 border border-blue-200/60' : risk.badge}`}>
-                  {mode === 'simulator' ? 'Simulation Environment' : mode === 'integration' ? 'Infrastructure Layer' : `${baseData?.risk ?? 'Low'} Risk · ${selectedDayCtx.operationalLabel}`}
-                </span>
+                {/* Live escalation posture — shows across all modes when overrides active */}
+                {operationalSignal && operationalSignal.operationalState.escalationRisk !== 'low' ? (
+                  <motion.span
+                    key={operationalSignal.operationalState.escalationRisk}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border
+                      ${operationalSignal.operationalState.escalationRisk === 'critical'
+                        ? 'bg-red-50 text-red-700 border-red-200 animate-pulse'
+                        : 'bg-orange-50 text-orange-700 border-orange-200'}`}
+                  >
+                    {operationalSignal.operationalState.escalationRisk === 'critical' ? '⚠ Critical Escalation' : '▲ Elevated Posture'}
+                  </motion.span>
+                ) : (
+                  <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors 
+                    ${mode === 'simulator' ? 'bg-amber-100/50 text-amber-700 border border-amber-200/60' : 
+                      mode === 'integration' ? 'bg-blue-100/50 text-blue-700 border border-blue-200/60' : risk.badge}`}>
+                    {mode === 'simulator' ? 'Simulation Environment' : mode === 'integration' ? 'Infrastructure Layer' : `${baseData?.risk ?? 'Low'} Risk · ${selectedDayCtx.operationalLabel}`}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -261,9 +298,20 @@ const Dashboard = ({ onBack }) => {
         {mode === 'integration' ? (
           <IntegrationHub operationalState={baseData} testMode={testMode} />
         ) : mode === 'simulator' ? (
-          <ScenarioSimulator baseData={baseData} allData={dashboardData} selectedDayIndex={selectedDayIndex} selectedDayCtx={selectedDayCtx} />
+          <ScenarioSimulator
+            baseData={baseData}
+            allData={dashboardData}
+            selectedDayIndex={selectedDayIndex}
+            selectedDayCtx={selectedDayCtx}
+            operationalSignal={operationalSignal}
+          />
         ) : mode === 'readiness' ? (
-          <OperationalReadiness />
+          <OperationalReadiness
+            overrides={overrides}
+            onOverridesChange={setOverrides}
+            operationalSignal={operationalSignal}
+            replay={replay}
+          />
         ) : (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start auto-rows-min min-w-0 pb-20">
             {/* LEFT COLUMN: Forecast, Recommendations, Departments */}
@@ -341,13 +389,50 @@ const Dashboard = ({ onBack }) => {
             transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 30 }}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100]"
           >
-            <div className="vision-glass px-6 py-3 rounded-2xl flex items-center gap-6 shadow-2xl shadow-slate-900/10">
-              <div className="flex items-center gap-2.5">
-                <div className={`w-2 h-2 rounded-full ${risk.dot} animate-pulse`} />
-                <span className="text-xs font-bold text-slate-700">{baseData?.risk ?? 'Low'} Surge · {selectedDayCtx.operationalLabel}</span>
-              </div>
+            <motion.div
+              animate={operationalSignal?.operationalState?.escalationRisk === 'critical'
+                ? { boxShadow: ['0 0 0 0 rgba(239,68,68,0)', '0 0 20px 4px rgba(239,68,68,0.15)', '0 0 0 0 rgba(239,68,68,0)'] }
+                : { boxShadow: '0 4px 32px rgba(15,23,42,0.08)' }
+              }
+              transition={{ duration: 2.5, repeat: Infinity }}
+              className="vision-glass px-5 py-3 rounded-2xl flex items-center gap-4 shadow-2xl shadow-slate-900/10"
+            >
+              {/* Primary: escalation or normal risk */}
+              {operationalSignal && operationalSignal.operationalState.escalationRisk !== 'low' ? (
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                    className={`w-2 h-2 rounded-full ${
+                      operationalSignal.operationalState.escalationRisk === 'critical' ? 'bg-red-500' : 'bg-orange-400'
+                    }`}
+                  />
+                  <span className={`text-xs font-black uppercase tracking-widest ${
+                    operationalSignal.operationalState.escalationRisk === 'critical' ? 'text-red-700' : 'text-orange-700'
+                  }`}>
+                    {operationalSignal.operationalState.escalationRisk === 'critical' ? 'Critical Escalation' : 'Elevated Posture'}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-2 h-2 rounded-full ${risk.dot} animate-pulse`} />
+                  <span className="text-xs font-bold text-slate-700">{baseData?.risk ?? 'Low'} Surge · {selectedDayCtx.operationalLabel}</span>
+                </div>
+              )}
               <div className="w-px h-5 bg-slate-200" />
-              <span className="text-xs font-mono font-bold text-emerald-600">{baseData?.confidence ?? 0}% model confidence</span>
+              <span className="text-xs font-mono font-bold text-emerald-600">{baseData?.confidence ?? 0}% confidence</span>
+              {/* Replay indicator */}
+              {replay.status === REPLAY_STATUS.PLAYING && (
+                <>
+                  <div className="w-px h-5 bg-slate-200" />
+                  <div className="flex items-center gap-1.5">
+                    <Radio size={11} className="text-indigo-500 animate-pulse" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-indigo-600">
+                      {replay.scenario?.name ?? 'Replay'} · {replay.currentFrame?.time}
+                    </span>
+                  </div>
+                </>
+              )}
               {testMode && (
                 <>
                   <div className="w-px h-5 bg-slate-200" />
@@ -359,11 +444,15 @@ const Dashboard = ({ onBack }) => {
               <div className="w-px h-5 bg-slate-200" />
               <button
                 onClick={() => setMode('readiness')}
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                className={`text-xs font-bold flex items-center gap-1 transition-colors ${
+                  operationalSignal?.operationalState?.escalationRisk === 'critical'
+                    ? 'text-red-600 hover:text-red-700'
+                    : 'text-blue-600 hover:text-blue-700'
+                }`}
               >
-                Run Protocols <ArrowUpRight size={12} />
+                {operationalSignal?.operationalState?.escalationRisk === 'critical' ? 'View Escalation' : 'Run Protocols'} <ArrowUpRight size={12} />
               </button>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -373,7 +462,7 @@ const Dashboard = ({ onBack }) => {
 
 /* ── Sub-components ── */
 
-const NavItem = ({ icon: Icon, label, active = false, onClick }) => (
+const NavItem = ({ icon: Icon, label, seq, active = false, onClick, alert = false }) => (
   <button onClick={onClick} className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all group relative text-sm font-semibold
     ${active
       ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border border-blue-100/60'
@@ -381,7 +470,15 @@ const NavItem = ({ icon: Icon, label, active = false, onClick }) => (
     }`}>
     {active && <motion.div layoutId="activeNav" className="absolute left-3 top-1/2 -translate-y-1/2 w-1 h-5 bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.5)]" />}
     <Icon size={18} className={active ? 'text-blue-600 ml-2' : 'group-hover:text-slate-700'} />
-    <span className="hidden md:block tracking-tight">{label}</span>
+    <span className="hidden md:block tracking-tight flex-1">{label}</span>
+    {seq && <span className="hidden md:block text-[8px] font-black tracking-widest text-slate-300 group-hover:text-slate-400 transition-colors ml-auto">{seq}</span>}
+    {alert && !active && (
+      <motion.span
+        animate={{ scale: [1, 1.3, 1] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+        className="hidden md:block w-1.5 h-1.5 rounded-full bg-red-500 ml-auto shadow-[0_0_6px_rgba(239,68,68,0.6)]"
+      />
+    )}
   </button>
 );
 

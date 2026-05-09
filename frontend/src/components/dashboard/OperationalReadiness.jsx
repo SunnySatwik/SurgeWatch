@@ -12,6 +12,8 @@ import {
   fetchRisk, fetchOperationalMetrics, runRiskAssessment,
   fetchProtocols, activateProtocol, deactivateProtocol, fetchAlerts 
 } from '../../utils/operationsService';
+import OperationalControlPanel, { DEFAULT_OVERRIDES, overridesToScenario } from './OperationalControlPanel';
+import ReplayControls from './ReplayControls';
 
 const RiskGauge = ({ score, level }) => {
   const colors = {
@@ -176,7 +178,7 @@ const AlertItem = ({ alert }) => {
   );
 };
 
-const OperationalReadiness = () => {
+const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange, operationalSignal = null, replay = null }) => {
   const [risk, setRisk] = useState(null);
   const [metrics, setMetrics] = useState(null);
   const [protocols, setProtocols] = useState([]);
@@ -185,6 +187,17 @@ const OperationalReadiness = () => {
   const [assessing, setAssessing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // Wire _jumpTo so ReplayControls can jump to arbitrary frames
+  if (replay) {
+    replay._jumpTo = (idx) => {
+      const sc = replay.scenario;
+      if (!sc?.frames?.[idx]) return;
+      replay.controls.pause?.();
+      onOverridesChange?.(sc.frames[idx].overrides);
+      // Sync frameIndex via reset + re-apply — we drive via setOverrides directly
+    };
+  }
 
   const loadData = async () => {
     try {
@@ -214,7 +227,9 @@ const OperationalReadiness = () => {
   const handleAssess = async () => {
     setAssessing(true);
     try {
-      const result = await runRiskAssessment();
+      // Pass current overrides as scenario modifiers into the assessment
+      const scenarioModifiers = overridesToScenario(overrides);
+      const result = await runRiskAssessment(scenarioModifiers);
       if (result.success) {
         setRisk(result.risk);
         await loadData();
@@ -276,11 +291,34 @@ const OperationalReadiness = () => {
   const activeProtocols = protocols.filter(p => p.status === 'active');
   const standbyProtocols = protocols.filter(p => p.status !== 'active');
   
-  // Extract directives from active protocols
+  // Extract directives from active protocols + live signal-driven directives
   const allDirectives = activeProtocols.flatMap(p => {
     const actions = typeof p.actions === 'string' ? JSON.parse(p.actions) : (p.actions || []);
     return actions.map(action => ({ protocol: p.name, action }));
   });
+
+  // Merge live telemetry events from operationalSignal into the audit stream
+  const syntheticEvents = (operationalSignal?.telemetryEvents || []).map((e, i) => ({
+    id: `live-${i}`,
+    title: e.title,
+    message: e.message,
+    severity: e.severity,
+    status: 'active',
+    created_at: new Date().toISOString(),
+  }));
+  const mergedAlerts = [...syntheticEvents, ...alerts].slice(0, 12);
+
+  // Apply live readiness delta to the displayed score
+  const liveRiskScore = risk
+    ? Math.max(0, Math.min(100, risk.score + (operationalSignal?.readinessDelta || 0)))
+    : null;
+  const liveRisk = risk
+    ? {
+        ...risk,
+        score: liveRiskScore,
+        level: liveRiskScore >= 81 ? 'CRITICAL' : liveRiskScore >= 61 ? 'HIGH' : liveRiskScore >= 36 ? 'MODERATE' : 'LOW'
+      }
+    : null;
 
   return (
     <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 min-w-0 pb-20 font-sans">
@@ -301,9 +339,87 @@ const OperationalReadiness = () => {
         )}
       </AnimatePresence>
 
-      {/* LEFT COLUMN: State & Protocols */}
+      {/* LEFT COLUMN: Replay + Controls + State + Protocols */}
       <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
-        
+
+        {/* Operational Replay Engine */}
+        {replay && (
+          <ReplayControls replay={replay} overrides={overrides} />
+        )}
+
+        {/* ══ Escalation Posture Banner — primary presentation signal ══ */}
+        <AnimatePresence mode="wait">
+          {operationalSignal && operationalSignal.operationalState.escalationRisk !== 'low' && (
+            <motion.div
+              key={operationalSignal.operationalState.escalationRisk}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.3 }}
+              className={`rounded-2xl border p-4 flex items-center gap-4 relative overflow-hidden
+                ${operationalSignal.operationalState.escalationRisk === 'critical'
+                  ? 'bg-red-50 border-red-200'
+                  : 'bg-orange-50 border-orange-200'}`}
+            >
+              {/* Ambient pulse on critical */}
+              {operationalSignal.operationalState.escalationRisk === 'critical' && (
+                <motion.div
+                  animate={{ opacity: [0.08, 0.18, 0.08] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 bg-red-400/10 pointer-events-none rounded-2xl"
+                />
+              )}
+              <div className={`p-2.5 rounded-xl relative z-10
+                ${operationalSignal.operationalState.escalationRisk === 'critical' ? 'bg-red-100' : 'bg-orange-100'}`}>
+                <ShieldAlert size={18} className={operationalSignal.operationalState.escalationRisk === 'critical' ? 'text-red-600' : 'text-orange-600'} />
+                {operationalSignal.operationalState.escalationRisk === 'critical' && (
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0 relative z-10">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className={`text-xs font-black uppercase tracking-widest
+                    ${operationalSignal.operationalState.escalationRisk === 'critical' ? 'text-red-700' : 'text-orange-700'}`}>
+                    {operationalSignal.operationalState.escalationRisk === 'critical' ? 'Critical Escalation Posture' : 'Elevated Escalation Posture'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    operationalSignal.operationalState.icuPressure !== 'stable' && `ICU ${operationalSignal.operationalState.icuPressure}`,
+                    operationalSignal.operationalState.erCongestion !== 'stable' && `ER ${operationalSignal.operationalState.erCongestion}`,
+                    operationalSignal.operationalState.ambulanceFlow !== 'normal' && `Transport ${operationalSignal.operationalState.ambulanceFlow}`,
+                    operationalSignal.operationalState.staffingStability !== 'stable' && `Staffing ${operationalSignal.operationalState.staffingStability}`,
+                    operationalSignal.operationalState.respiratoryPressure !== 'normal' && `Respiratory ${operationalSignal.operationalState.respiratoryPressure}`,
+                  ].filter(Boolean).map((factor, i) => (
+                    <span key={i} className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
+                      ${operationalSignal.operationalState.escalationRisk === 'critical'
+                        ? 'bg-red-100 text-red-700 border-red-200'
+                        : 'bg-orange-100 text-orange-700 border-orange-200'}`}>
+                      {factor}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={handleAssess}
+                disabled={assessing}
+                className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all shrink-0 relative z-10
+                  ${operationalSignal.operationalState.escalationRisk === 'critical'
+                    ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
+                    : 'bg-orange-600 text-white border-orange-600 hover:bg-orange-700'}`}
+              >
+                {assessing ? 'Assessing...' : 'Assess Now'}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Operational Control Console */}
+        <OperationalControlPanel overrides={overrides} onChange={onOverridesChange || (() => {})} />
+
         {/* A. Operational State */}
         <div className="vision-card glass-reflection p-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-400/5 blur-[80px] rounded-full pointer-events-none" />
@@ -318,11 +434,19 @@ const OperationalReadiness = () => {
           </div>
 
           <div className="flex flex-col md:flex-row gap-6 relative z-10 items-center md:items-stretch">
-            {risk && (
-              <div className="flex-shrink-0 flex items-center justify-center">
-                <RiskGauge score={risk.score} level={risk.level} />
-              </div>
-            )}
+            <AnimatePresence mode="wait">
+              {liveRisk && (
+                <motion.div
+                  key={liveRisk.level}
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.4 }}
+                  className="flex-shrink-0 flex items-center justify-center"
+                >
+                  <RiskGauge score={liveRisk.score} level={liveRisk.level} />
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 w-full">
               <MetricCard icon={Heart} label="Admissions" value={latestMetric?.total_admissions ?? '—'} trend="up" color="text-rose-500" bgColor="bg-rose-50" />
@@ -416,12 +540,17 @@ const OperationalReadiness = () => {
           <div className="flex items-center gap-2 mb-4 shrink-0">
             <AlertTriangle size={16} className="text-amber-500" />
             <h3 className="text-sm font-display font-bold text-slate-800">Operational Audit</h3>
+            {syntheticEvents.length > 0 && (
+              <span className="ml-auto px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-red-50 text-red-600 border border-red-200 animate-pulse">
+                {syntheticEvents.length} Live
+              </span>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto pr-2 space-y-1 divide-y divide-slate-100">
             <AnimatePresence>
-              {alerts.map(alert => <AlertItem key={alert.id} alert={alert} />)}
+              {mergedAlerts.map(alert => <AlertItem key={alert.id} alert={alert} />)}
             </AnimatePresence>
-            {alerts.length === 0 && <div className="text-center py-4 text-xs text-slate-400">No recent events</div>}
+            {mergedAlerts.length === 0 && <div className="text-center py-4 text-xs text-slate-400">No recent events</div>}
           </div>
         </div>
 

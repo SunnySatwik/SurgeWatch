@@ -172,9 +172,41 @@ function evaluateRisk(hospitalId = 1) {
 
 /**
  * Store a risk assessment snapshot in the database (via alerts if threshold breached).
+ * Optionally accepts scenarioModifiers from the Operational Control Console to amplify scoring.
  */
-function assessAndAlert(hospitalId = 1) {
+function assessAndAlert(hospitalId = 1, scenarioModifiers = null) {
     const risk = evaluateRisk(hospitalId);
+
+    // Apply scenario modifier amplifications
+    if (scenarioModifiers) {
+        let amplification = 0;
+        const appliedFactors = [];
+
+        if (scenarioModifiers.viral >= 2) { amplification += 18; appliedFactors.push({ factor: 'Sim: Viral surge active', value: 'Critical outbreak', impact: 18 }); }
+        else if (scenarioModifiers.viral === 1) { amplification += 10; appliedFactors.push({ factor: 'Sim: Respiratory pressure elevated', value: 'Elevated positivity', impact: 10 }); }
+
+        if (scenarioModifiers.staffing === -1) { amplification += 15; appliedFactors.push({ factor: 'Sim: Staffing deficit injected', value: 'Below-safe ratios', impact: 15 }); }
+
+        if (scenarioModifiers.weather === 2) { amplification += 12; appliedFactors.push({ factor: 'Sim: Severe weather', value: 'Storm conditions', impact: 12 }); }
+        else if (scenarioModifiers.weather === 1) { amplification += 6; appliedFactors.push({ factor: 'Sim: Adverse weather', value: 'Rain/moderate', impact: 6 }); }
+
+        if (scenarioModifiers.traffic === 1) { amplification += 8; appliedFactors.push({ factor: 'Sim: Traffic critical', value: 'ETA compressed', impact: 8 }); }
+
+        if (scenarioModifiers.crowd >= 2) { amplification += 10; appliedFactors.push({ factor: 'Sim: Mass gathering', value: 'Trauma surge expected', impact: 10 }); }
+        else if (scenarioModifiers.crowd === 1) { amplification += 5; appliedFactors.push({ factor: 'Sim: Crowd pressure', value: 'Elevated intake', impact: 5 }); }
+
+        // Inject scenario factors at the front and re-clamp
+        risk.factors = [...appliedFactors, ...risk.factors];
+        risk.score = Math.min(100, risk.score + amplification);
+
+        // Reclassify after amplification
+        if (risk.score >= 81) risk.level = 'CRITICAL';
+        else if (risk.score >= 61) risk.level = 'HIGH';
+        else if (risk.score >= 36) risk.level = 'MODERATE';
+        else risk.level = 'LOW';
+
+        risk.simulationActive = true;
+    }
 
     // Create alert if risk is HIGH or CRITICAL
     if (risk.level === 'HIGH' || risk.level === 'CRITICAL') {
@@ -186,7 +218,7 @@ function assessAndAlert(hospitalId = 1) {
             [
                 hospitalId,
                 risk.level === 'CRITICAL' ? 'critical' : 'high',
-                `${risk.level} Risk Assessment — Score: ${risk.score}`,
+                `${risk.level} Risk Assessment — Score: ${risk.score}${risk.simulationActive ? ' [SIM ACTIVE]' : ''}`,
                 `Risk factors: ${topFactors}. Overall occupancy: ${risk.occupancy}%. Immediate review recommended.`
             ]
         );

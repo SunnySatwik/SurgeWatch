@@ -37,13 +37,15 @@ router.get('/risk', (req, res) => {
 /**
  * POST /api/operations/risk/assess
  * Run full risk assessment with auto-alerting and protocol evaluation.
+ * Accepts optional scenarioModifiers from the Operational Control Console.
  */
-router.post('/risk/assess', (req, res) => {
+router.post('/risk/assess', async (req, res) => {
     try {
         const hospitalId = parseInt(req.body.hospitalId) || 1;
+        const scenarioModifiers = req.body.scenarioModifiers || null;
 
-        // 1. Evaluate risk
-        const risk = assessAndAlert(hospitalId);
+        // 1. Evaluate risk (with optional scenario override injection)
+        const risk = assessAndAlert(hospitalId, scenarioModifiers);
 
         // 2. Check protocols against risk
         const protocolResult = evaluateProtocols(hospitalId, risk);
@@ -51,7 +53,8 @@ router.post('/risk/assess', (req, res) => {
         res.json({
             success: true,
             risk,
-            protocols: protocolResult
+            protocols: protocolResult,
+            ...(scenarioModifiers && { scenarioApplied: scenarioModifiers })
         });
     } catch (err) {
         console.error('[Operations] Risk assess error:', err);
