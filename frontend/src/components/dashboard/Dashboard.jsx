@@ -23,7 +23,6 @@ import DepartmentSection from './DepartmentSection';
 import WeatherWidget from './WeatherWidget';
 import ScenarioSimulator from './ScenarioSimulator';
 import IntegrationHub from './IntegrationHub';
-import ProtocolPanel from './ProtocolPanel';
 import OperationalReadiness from './OperationalReadiness';
 
 const riskConfig = {
@@ -139,7 +138,6 @@ const Dashboard = ({ onBack }) => {
           <NavItem icon={LayoutDashboard} label="Insights" active={mode === 'insights'} onClick={() => setMode('insights')} />
           <NavItem icon={Beaker} label="Scenario Lab" active={mode === 'simulator'} onClick={() => setMode('simulator')} />
           <NavItem icon={Database} label="Integration Hub" active={mode === 'integration'} onClick={() => setMode('integration')} />
-          <NavItem icon={Shield} label="Protocols" active={mode === 'protocols'} onClick={() => setMode('protocols')} />
           <NavItem icon={Gauge} label="Readiness" active={mode === 'readiness'} onClick={() => setMode('readiness')} />
         </nav>
 
@@ -148,27 +146,26 @@ const Dashboard = ({ onBack }) => {
           <div className={`w-full px-4 py-3 rounded-2xl border flex items-center gap-3 transition-colors 
             ${mode === 'simulator' ? 'bg-amber-50 border-amber-100' : 
               mode === 'integration' ? 'bg-blue-50 border-blue-100' :
-              mode === 'protocols' ? 'bg-red-50 border-red-100' :
               mode === 'readiness' ? 'bg-purple-50 border-purple-100' : 'bg-emerald-50 border-emerald-100'}`}>
             <div className="relative w-2.5 h-2.5">
               <div className={`absolute inset-0 rounded-full animate-ping 
                 ${mode === 'simulator' ? 'bg-amber-500' : mode === 'integration' ? 'bg-blue-500' :
-                  mode === 'protocols' ? 'bg-red-500' : mode === 'readiness' ? 'bg-purple-500' : 'bg-emerald-500'}`} />
+                  mode === 'readiness' ? 'bg-purple-500' : 'bg-emerald-500'}`} />
               <div className={`w-2.5 h-2.5 rounded-full relative 
                 ${mode === 'simulator' ? 'bg-amber-500' : mode === 'integration' ? 'bg-blue-500' :
-                  mode === 'protocols' ? 'bg-red-500' : mode === 'readiness' ? 'bg-purple-500' : 'bg-emerald-500'}`} />
+                  mode === 'readiness' ? 'bg-purple-500' : 'bg-emerald-500'}`} />
             </div>
             <div>
               <p className={`text-[10px] font-black uppercase tracking-widest 
                 ${mode === 'simulator' ? 'text-amber-700' : mode === 'integration' ? 'text-blue-700' :
-                  mode === 'protocols' ? 'text-red-700' : mode === 'readiness' ? 'text-purple-700' : 'text-emerald-700'}`}>
+                  mode === 'readiness' ? 'text-purple-700' : 'text-emerald-700'}`}>
                 {mode === 'simulator' ? 'Sim Engine' : mode === 'integration' ? 'Data Sync' :
-                 mode === 'protocols' ? 'Protocol Mgmt' : mode === 'readiness' ? 'Ops Readiness' : 'Model Live'}
+                 mode === 'readiness' ? 'Ops Readiness' : 'Model Live'}
               </p>
               <p className={`text-[9px] font-medium 
                 ${mode === 'simulator' ? 'text-amber-600' : mode === 'integration' ? 'text-blue-600' :
-                  mode === 'protocols' ? 'text-red-600' : mode === 'readiness' ? 'text-purple-600' : 'text-emerald-600'}`}>
-                {mode === 'integration' ? 'All systems active' : mode === 'protocols' ? 'Surge response control' :
+                  mode === 'readiness' ? 'text-purple-600' : 'text-emerald-600'}`}>
+                {mode === 'integration' ? 'All systems active' : 
                  mode === 'readiness' ? 'Risk assessment live' : `v2.4 · ${baseData?.confidence}% acc.`}
               </p>
             </div>
@@ -265,8 +262,6 @@ const Dashboard = ({ onBack }) => {
           <IntegrationHub operationalState={baseData} testMode={testMode} />
         ) : mode === 'simulator' ? (
           <ScenarioSimulator baseData={baseData} allData={dashboardData} selectedDayIndex={selectedDayIndex} selectedDayCtx={selectedDayCtx} />
-        ) : mode === 'protocols' ? (
-          <ProtocolPanel />
         ) : mode === 'readiness' ? (
           <OperationalReadiness />
         ) : (
@@ -363,7 +358,7 @@ const Dashboard = ({ onBack }) => {
               )}
               <div className="w-px h-5 bg-slate-200" />
               <button
-                onClick={() => setMode('protocols')}
+                onClick={() => setMode('readiness')}
                 className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
               >
                 Run Protocols <ArrowUpRight size={12} />
