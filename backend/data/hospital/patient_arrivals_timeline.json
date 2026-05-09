@@ -1,0 +1,155 @@
+[
+  {
+    "timestamp": "06:00",
+    "erWalkIns": 12,
+    "ambulanceArrivals": 4,
+    "respiratoryPresentations": 8,
+    "traumaPresentations": 2,
+    "triageCategory1": 1,
+    "triageCategory2": 3
+  },
+  {
+    "timestamp": "07:00",
+    "erWalkIns": 15,
+    "ambulanceArrivals": 5,
+    "respiratoryPresentations": 10,
+    "traumaPresentations": 2,
+    "triageCategory1": 1,
+    "triageCategory2": 4
+  },
+  {
+    "timestamp": "08:00",
+    "erWalkIns": 18,
+    "ambulanceArrivals": 6,
+    "respiratoryPresentations": 12,
+    "traumaPresentations": 3,
+    "triageCategory1": 2,
+    "triageCategory2": 5
+  },
+  {
+    "timestamp": "09:00",
+    "erWalkIns": 22,
+    "ambulanceArrivals": 8,
+    "respiratoryPresentations": 15,
+    "traumaPresentations": 4,
+    "triageCategory1": 3,
+    "triageCategory2": 6
+  },
+  {
+    "timestamp": "10:00",
+    "erWalkIns": 35,
+    "ambulanceArrivals": 12,
+    "respiratoryPresentations": 25,
+    "traumaPresentations": 4,
+    "triageCategory1": 4,
+    "triageCategory2": 10
+  },
+  {
+    "timestamp": "11:00",
+    "erWalkIns": 42,
+    "ambulanceArrivals": 14,
+    "respiratoryPresentations": 32,
+    "traumaPresentations": 5,
+    "triageCategory1": 5,
+    "triageCategory2": 15
+  },
+  {
+    "timestamp": "12:00",
+    "erWalkIns": 48,
+    "ambulanceArrivals": 12,
+    "respiratoryPresentations": 38,
+    "traumaPresentations": 5,
+    "triageCategory1": 6,
+    "triageCategory2": 18
+  },
+  {
+    "timestamp": "13:00",
+    "erWalkIns": 52,
+    "ambulanceArrivals": 10,
+    "respiratoryPresentations": 42,
+    "traumaPresentations": 4,
+    "triageCategory1": 7,
+    "triageCategory2": 20
+  },
+  {
+    "timestamp": "14:00",
+    "erWalkIns": 45,
+    "ambulanceArrivals": 8,
+    "respiratoryPresentations": 35,
+    "traumaPresentations": 3,
+    "triageCategory1": 6,
+    "triageCategory2": 18
+  },
+  {
+    "timestamp": "15:00",
+    "erWalkIns": 40,
+    "ambulanceArrivals": 9,
+    "respiratoryPresentations": 30,
+    "traumaPresentations": 6,
+    "triageCategory1": 5,
+    "triageCategory2": 15
+  },
+  {
+    "timestamp": "16:00",
+    "erWalkIns": 45,
+    "ambulanceArrivals": 11,
+    "respiratoryPresentations": 28,
+    "traumaPresentations": 10,
+    "triageCategory1": 5,
+    "triageCategory2": 14
+  },
+  {
+    "timestamp": "17:00",
+    "erWalkIns": 50,
+    "ambulanceArrivals": 12,
+    "respiratoryPresentations": 25,
+    "traumaPresentations": 8,
+    "triageCategory1": 4,
+    "triageCategory2": 12
+  },
+  {
+    "timestamp": "18:00",
+    "erWalkIns": 38,
+    "ambulanceArrivals": 10,
+    "respiratoryPresentations": 20,
+    "traumaPresentations": 6,
+    "triageCategory1": 3,
+    "triageCategory2": 10
+  },
+  {
+    "timestamp": "19:00",
+    "erWalkIns": 30,
+    "ambulanceArrivals": 8,
+    "respiratoryPresentations": 15,
+    "traumaPresentations": 4,
+    "triageCategory1": 2,
+    "triageCategory2": 8
+  },
+  {
+    "timestamp": "20:00",
+    "erWalkIns": 25,
+    "ambulanceArrivals": 6,
+    "respiratoryPresentations": 12,
+    "traumaPresentations": 3,
+    "triageCategory1": 1,
+    "triageCategory2": 6
+  },
+  {
+    "timestamp": "21:00",
+    "erWalkIns": 20,
+    "ambulanceArrivals": 5,
+    "respiratoryPresentations": 10,
+    "traumaPresentations": 2,
+    "triageCategory1": 1,
+    "triageCategory2": 4
+  },
+  {
+    "timestamp": "22:00",
+    "erWalkIns": 15,
+    "ambulanceArrivals": 4,
+    "respiratoryPresentations": 8,
+    "traumaPresentations": 2,
+    "triageCategory1": 1,
+    "triageCategory2": 3
+  }
+]

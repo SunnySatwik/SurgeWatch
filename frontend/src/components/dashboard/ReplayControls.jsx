@@ -1,12 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Play, Pause, RotateCcw, StepForward, StepBack,
   ChevronDown, Bookmark, BookmarkCheck, Trash2,
-  ChevronRight, Zap, Timer, X, Layers
+  ChevronRight, Zap, Timer, X, Layers, Database, Loader
 } from 'lucide-react';
-import { REPLAY_SCENARIOS, REPLAY_SPEEDS } from '../../data/replayScenarios';
+import { REPLAY_SCENARIOS, REPLAY_SPEEDS, ALL_SCENARIOS } from '../../data/replayScenarios';
 import { REPLAY_STATUS } from '../../hooks/useReplayEngine';
+import { fetchReplayScenario } from '../../utils/replayService';
 
 const SEVERITY_STYLES = {
   critical: 'text-red-700 bg-red-50 border-red-200',
@@ -17,17 +18,20 @@ const SEVERITY_STYLES = {
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-const ScenarioCard = ({ sc, isActive, onLoad }) => (
+const ScenarioCard = ({ sc, isActive, onLoad, isLoadingDataset }) => (
   <button
     onClick={() => onLoad(sc)}
+    disabled={isLoadingDataset && sc.datasetDriven}
     className={`w-full text-left p-3.5 rounded-xl border transition-all group
       ${isActive
         ? 'bg-indigo-50 border-indigo-200 shadow-sm shadow-indigo-500/10'
         : 'bg-white/60 border-slate-100 hover:border-slate-200 hover:bg-white/80'
-      }`}
+      } ${isLoadingDataset && sc.datasetDriven ? 'opacity-70 cursor-wait' : ''}`}
   >
     <div className="flex items-start gap-3">
-      <span className="text-lg leading-none mt-0.5">{sc.icon}</span>
+      <span className="text-lg leading-none mt-0.5">
+        {isLoadingDataset && sc.datasetDriven ? '⏳' : sc.icon}
+      </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <p className={`text-xs font-bold truncate ${isActive ? 'text-indigo-700' : 'text-slate-800'}`}>
@@ -36,16 +40,26 @@ const ScenarioCard = ({ sc, isActive, onLoad }) => (
           <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${SEVERITY_STYLES[sc.severity]}`}>
             {sc.severity}
           </span>
+          {sc.datasetDriven && (
+            <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border bg-blue-50 text-blue-600 border-blue-200 flex items-center gap-1">
+              <Database size={7} /> Live
+            </span>
+          )}
         </div>
         <p className="text-[9px] text-slate-400 leading-tight line-clamp-2">{sc.description}</p>
         <div className="flex items-center gap-2 mt-1.5">
-          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{sc.frames.length} frames · {sc.duration}</span>
+          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+            {sc.datasetDriven ? 'Dataset-driven' : `${sc.frames?.length ?? 0} frames`} · {sc.duration}
+          </span>
           {sc.tags.slice(0, 2).map(t => (
             <span key={t} className="px-1.5 py-0.5 rounded bg-slate-100 text-[7px] font-black uppercase tracking-widest text-slate-500">{t}</span>
           ))}
         </div>
       </div>
-      <ChevronRight size={12} className={`shrink-0 mt-1 transition-colors ${isActive ? 'text-indigo-500' : 'text-slate-300 group-hover:text-slate-500'}`} />
+      {isLoadingDataset && sc.datasetDriven
+        ? <Loader size={12} className="shrink-0 mt-1 text-indigo-400 animate-spin" />
+        : <ChevronRight size={12} className={`shrink-0 mt-1 transition-colors ${isActive ? 'text-indigo-500' : 'text-slate-300 group-hover:text-slate-500'}`} />
+      }
     </div>
   </button>
 );
@@ -111,6 +125,8 @@ const ReplayControls = ({ replay, overrides }) => {
   const [expanded, setExpanded] = useState(false);
   const [tab, setTab] = useState('presets'); // 'presets' | 'saved'
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [loadingDataset, setLoadingDataset] = useState(false);
+  const [datasetError, setDatasetError] = useState(null);
 
   const { status, scenario, frameIndex, currentFrame, totalFrames, progress, speed, savedScenarios } = replay;
   const { load, play, pause, resume, reset, eject, stepForward, stepBackward, setSpeed, saveCurrentState, deleteSaved } = replay.controls;
@@ -124,6 +140,30 @@ const ReplayControls = ({ replay, overrides }) => {
   const handleSave = (name) => {
     saveCurrentState(name, overrides);
     setShowSaveModal(false);
+  };
+
+  // Dataset-driven scenarios are fetched from the backend before loading.
+  // Static scenarios are loaded directly — no change to existing behavior.
+  const handleLoadScenario = async (sc) => {
+    if (sc.datasetDriven) {
+      setLoadingDataset(true);
+      setDatasetError(null);
+      try {
+        const res = await fetchReplayScenario();
+        if (res.success && res.scenario) {
+          load(res.scenario);
+        } else {
+          setDatasetError('Failed to load dataset scenario.');
+        }
+      } catch (err) {
+        console.error('[ReplayControls] Dataset fetch error:', err);
+        setDatasetError('Could not reach the replay API.');
+      } finally {
+        setLoadingDataset(false);
+      }
+    } else {
+      load(sc);
+    }
   };
 
   const handleJump = (idx) => {
@@ -352,12 +392,18 @@ const ReplayControls = ({ replay, overrides }) => {
 
               {tab === 'presets' && (
                 <div className="space-y-2">
-                  {REPLAY_SCENARIOS.map(sc => (
+                  {datasetError && (
+                    <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200">
+                      <p className="text-[10px] font-bold text-red-600">{datasetError}</p>
+                    </div>
+                  )}
+                  {ALL_SCENARIOS.map(sc => (
                     <ScenarioCard
                       key={sc.id}
                       sc={sc}
                       isActive={scenario?.id === sc.id}
-                      onLoad={load}
+                      onLoad={handleLoadScenario}
+                      isLoadingDataset={loadingDataset}
                     />
                   ))}
                 </div>

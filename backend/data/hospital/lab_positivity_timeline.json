@@ -1,0 +1,138 @@
+[
+  {
+    "timestamp": "06:00",
+    "testsPerformed": 24,
+    "respiratoryPositive": 18,
+    "influenzaTypeA": 42,
+    "influenzaTypeB": 12,
+    "labBacklog": 2
+  },
+  {
+    "timestamp": "07:00",
+    "testsPerformed": 28,
+    "respiratoryPositive": 20,
+    "influenzaTypeA": 45,
+    "influenzaTypeB": 15,
+    "labBacklog": 2
+  },
+  {
+    "timestamp": "08:00",
+    "testsPerformed": 35,
+    "respiratoryPositive": 22,
+    "influenzaTypeA": 48,
+    "influenzaTypeB": 18,
+    "labBacklog": 3
+  },
+  {
+    "timestamp": "09:00",
+    "testsPerformed": 42,
+    "respiratoryPositive": 25,
+    "influenzaTypeA": 52,
+    "influenzaTypeB": 20,
+    "labBacklog": 4
+  },
+  {
+    "timestamp": "10:00",
+    "testsPerformed": 55,
+    "respiratoryPositive": 28,
+    "influenzaTypeA": 58,
+    "influenzaTypeB": 22,
+    "labBacklog": 6
+  },
+  {
+    "timestamp": "11:00",
+    "testsPerformed": 62,
+    "respiratoryPositive": 32,
+    "influenzaTypeA": 62,
+    "influenzaTypeB": 25,
+    "labBacklog": 8
+  },
+  {
+    "timestamp": "12:00",
+    "testsPerformed": 70,
+    "respiratoryPositive": 38,
+    "influenzaTypeA": 65,
+    "influenzaTypeB": 28,
+    "labBacklog": 12
+  },
+  {
+    "timestamp": "13:00",
+    "testsPerformed": 75,
+    "respiratoryPositive": 42,
+    "influenzaTypeA": 68,
+    "influenzaTypeB": 30,
+    "labBacklog": 14
+  },
+  {
+    "timestamp": "14:00",
+    "testsPerformed": 80,
+    "respiratoryPositive": 45,
+    "influenzaTypeA": 72,
+    "influenzaTypeB": 32,
+    "labBacklog": 16
+  },
+  {
+    "timestamp": "15:00",
+    "testsPerformed": 78,
+    "respiratoryPositive": 48,
+    "influenzaTypeA": 75,
+    "influenzaTypeB": 30,
+    "labBacklog": 15
+  },
+  {
+    "timestamp": "16:00",
+    "testsPerformed": 72,
+    "respiratoryPositive": 45,
+    "influenzaTypeA": 70,
+    "influenzaTypeB": 28,
+    "labBacklog": 12
+  },
+  {
+    "timestamp": "17:00",
+    "testsPerformed": 65,
+    "respiratoryPositive": 42,
+    "influenzaTypeA": 65,
+    "influenzaTypeB": 25,
+    "labBacklog": 10
+  },
+  {
+    "timestamp": "18:00",
+    "testsPerformed": 58,
+    "respiratoryPositive": 38,
+    "influenzaTypeA": 60,
+    "influenzaTypeB": 22,
+    "labBacklog": 8
+  },
+  {
+    "timestamp": "19:00",
+    "testsPerformed": 50,
+    "respiratoryPositive": 35,
+    "influenzaTypeA": 55,
+    "influenzaTypeB": 20,
+    "labBacklog": 6
+  },
+  {
+    "timestamp": "20:00",
+    "testsPerformed": 45,
+    "respiratoryPositive": 32,
+    "influenzaTypeA": 50,
+    "influenzaTypeB": 18,
+    "labBacklog": 4
+  },
+  {
+    "timestamp": "21:00",
+    "testsPerformed": 38,
+    "respiratoryPositive": 28,
+    "influenzaTypeA": 48,
+    "influenzaTypeB": 15,
+    "labBacklog": 3
+  },
+  {
+    "timestamp": "22:00",
+    "testsPerformed": 32,
+    "respiratoryPositive": 25,
+    "influenzaTypeA": 45,
+    "influenzaTypeB": 12,
+    "labBacklog": 2
+  }
+]

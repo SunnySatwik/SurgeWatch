@@ -1,0 +1,189 @@
+[
+  {
+    "timestamp": "06:00",
+    "erOccupancy": 45,
+    "icuOccupancy": 65,
+    "generalWardOccupancy": 70,
+    "pediatricsOccupancy": 80,
+    "isolationOccupancy": 80,
+    "boardingPatients": 0,
+    "dischargeVelocity": "normal",
+    "occupancyMomentum": "stable"
+  },
+  {
+    "timestamp": "07:00",
+    "erOccupancy": 50,
+    "icuOccupancy": 65,
+    "generalWardOccupancy": 70,
+    "pediatricsOccupancy": 82,
+    "isolationOccupancy": 82,
+    "boardingPatients": 0,
+    "dischargeVelocity": "normal",
+    "occupancyMomentum": "rising"
+  },
+  {
+    "timestamp": "08:00",
+    "erOccupancy": 55,
+    "icuOccupancy": 68,
+    "generalWardOccupancy": 72,
+    "pediatricsOccupancy": 85,
+    "isolationOccupancy": 85,
+    "boardingPatients": 2,
+    "dischargeVelocity": "slowed",
+    "occupancyMomentum": "rising"
+  },
+  {
+    "timestamp": "09:00",
+    "erOccupancy": 65,
+    "icuOccupancy": 70,
+    "generalWardOccupancy": 75,
+    "pediatricsOccupancy": 88,
+    "isolationOccupancy": 90,
+    "boardingPatients": 5,
+    "dischargeVelocity": "constrained",
+    "occupancyMomentum": "accelerating"
+  },
+  {
+    "timestamp": "10:00",
+    "erOccupancy": 80,
+    "icuOccupancy": 72,
+    "generalWardOccupancy": 75,
+    "pediatricsOccupancy": 90,
+    "isolationOccupancy": 95,
+    "boardingPatients": 12,
+    "dischargeVelocity": "blocked",
+    "occupancyMomentum": "accelerating"
+  },
+  {
+    "timestamp": "11:00",
+    "erOccupancy": 88,
+    "icuOccupancy": 75,
+    "generalWardOccupancy": 78,
+    "pediatricsOccupancy": 92,
+    "isolationOccupancy": 98,
+    "boardingPatients": 18,
+    "dischargeVelocity": "blocked",
+    "occupancyMomentum": "critical"
+  },
+  {
+    "timestamp": "12:00",
+    "erOccupancy": 92,
+    "icuOccupancy": 80,
+    "generalWardOccupancy": 80,
+    "pediatricsOccupancy": 95,
+    "isolationOccupancy": 100,
+    "boardingPatients": 22,
+    "dischargeVelocity": "blocked",
+    "occupancyMomentum": "critical"
+  },
+  {
+    "timestamp": "13:00",
+    "erOccupancy": 95,
+    "icuOccupancy": 88,
+    "generalWardOccupancy": 82,
+    "pediatricsOccupancy": 96,
+    "isolationOccupancy": 100,
+    "boardingPatients": 26,
+    "dischargeVelocity": "blocked",
+    "occupancyMomentum": "critical"
+  },
+  {
+    "timestamp": "14:00",
+    "erOccupancy": 96,
+    "icuOccupancy": 94,
+    "generalWardOccupancy": 85,
+    "pediatricsOccupancy": 96,
+    "isolationOccupancy": 100,
+    "boardingPatients": 28,
+    "dischargeVelocity": "constrained",
+    "occupancyMomentum": "critical"
+  },
+  {
+    "timestamp": "15:00",
+    "erOccupancy": 98,
+    "icuOccupancy": 96,
+    "generalWardOccupancy": 88,
+    "pediatricsOccupancy": 97,
+    "isolationOccupancy": 100,
+    "boardingPatients": 30,
+    "dischargeVelocity": "constrained",
+    "occupancyMomentum": "critical"
+  },
+  {
+    "timestamp": "16:00",
+    "erOccupancy": 96,
+    "icuOccupancy": 98,
+    "generalWardOccupancy": 90,
+    "pediatricsOccupancy": 97,
+    "isolationOccupancy": 100,
+    "boardingPatients": 28,
+    "dischargeVelocity": "constrained",
+    "occupancyMomentum": "critical"
+  },
+  {
+    "timestamp": "17:00",
+    "erOccupancy": 95,
+    "icuOccupancy": 100,
+    "generalWardOccupancy": 92,
+    "pediatricsOccupancy": 96,
+    "isolationOccupancy": 100,
+    "boardingPatients": 26,
+    "dischargeVelocity": "slowed",
+    "occupancyMomentum": "critical"
+  },
+  {
+    "timestamp": "18:00",
+    "erOccupancy": 90,
+    "icuOccupancy": 100,
+    "generalWardOccupancy": 95,
+    "pediatricsOccupancy": 95,
+    "isolationOccupancy": 98,
+    "boardingPatients": 20,
+    "dischargeVelocity": "recovering",
+    "occupancyMomentum": "recovering"
+  },
+  {
+    "timestamp": "19:00",
+    "erOccupancy": 82,
+    "icuOccupancy": 98,
+    "generalWardOccupancy": 96,
+    "pediatricsOccupancy": 92,
+    "isolationOccupancy": 96,
+    "boardingPatients": 12,
+    "dischargeVelocity": "recovering",
+    "occupancyMomentum": "recovering"
+  },
+  {
+    "timestamp": "20:00",
+    "erOccupancy": 75,
+    "icuOccupancy": 96,
+    "generalWardOccupancy": 94,
+    "pediatricsOccupancy": 88,
+    "isolationOccupancy": 92,
+    "boardingPatients": 8,
+    "dischargeVelocity": "normal",
+    "occupancyMomentum": "recovering"
+  },
+  {
+    "timestamp": "21:00",
+    "erOccupancy": 70,
+    "icuOccupancy": 95,
+    "generalWardOccupancy": 92,
+    "pediatricsOccupancy": 85,
+    "isolationOccupancy": 88,
+    "boardingPatients": 4,
+    "dischargeVelocity": "normal",
+    "occupancyMomentum": "stable"
+  },
+  {
+    "timestamp": "22:00",
+    "erOccupancy": 65,
+    "icuOccupancy": 92,
+    "generalWardOccupancy": 90,
+    "pediatricsOccupancy": 82,
+    "isolationOccupancy": 85,
+    "boardingPatients": 2,
+    "dischargeVelocity": "normal",
+    "occupancyMomentum": "stable"
+  }
+]

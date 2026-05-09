@@ -246,3 +246,28 @@ export const REPLAY_SPEEDS = [
 ];
 
 export const DEFAULT_REPLAY_SPEED = REPLAY_SPEEDS[1]; // 1×
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATASET-DRIVEN SCENARIOS
+// These stubs have datasetDriven: true and no inline frames.
+// ReplayControls detects this flag and fetches the real frames from:
+//   GET /api/replay/scenario
+// before calling useReplayEngine.load().
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const DATASET_SCENARIOS = [
+  {
+    id:          'monsoon_respiratory_surge',
+    name:        'Monsoon Respiratory Surge',
+    description: 'Dataset-driven replay of a full Bengaluru monsoon surge day. Ambulance delays, ER boarding, ICU saturation, and respiratory escalation — resolved live from hospital timeline data.',
+    icon:        '🌧',
+    severity:    'critical',
+    duration:    '16h',
+    tags:        ['transport', 'respiratory', 'ICU', 'dataset'],
+    datasetDriven: true,
+    frames:      [], // populated at load time from /api/replay/scenario
+  },
+];
+
+// Merged list: dataset-driven scenarios appear first.
+export const ALL_SCENARIOS = [...DATASET_SCENARIOS, ...REPLAY_SCENARIOS];

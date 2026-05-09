@@ -1,0 +1,138 @@
+[
+  {
+    "timestamp": "06:00",
+    "nursesOnDuty": 42,
+    "doctorsOnDuty": 12,
+    "onCallEngaged": 0,
+    "staffingStatus": "stable",
+    "fatigueLevel": 15
+  },
+  {
+    "timestamp": "07:00",
+    "nursesOnDuty": 45,
+    "doctorsOnDuty": 14,
+    "onCallEngaged": 0,
+    "staffingStatus": "stable",
+    "fatigueLevel": 10
+  },
+  {
+    "timestamp": "08:00",
+    "nursesOnDuty": 45,
+    "doctorsOnDuty": 14,
+    "onCallEngaged": 0,
+    "staffingStatus": "stable",
+    "fatigueLevel": 12
+  },
+  {
+    "timestamp": "09:00",
+    "nursesOnDuty": 45,
+    "doctorsOnDuty": 14,
+    "onCallEngaged": 0,
+    "staffingStatus": "strained",
+    "fatigueLevel": 20
+  },
+  {
+    "timestamp": "10:00",
+    "nursesOnDuty": 48,
+    "doctorsOnDuty": 15,
+    "onCallEngaged": 2,
+    "staffingStatus": "strained",
+    "fatigueLevel": 30
+  },
+  {
+    "timestamp": "11:00",
+    "nursesOnDuty": 48,
+    "doctorsOnDuty": 15,
+    "onCallEngaged": 4,
+    "staffingStatus": "strained",
+    "fatigueLevel": 45
+  },
+  {
+    "timestamp": "12:00",
+    "nursesOnDuty": 50,
+    "doctorsOnDuty": 16,
+    "onCallEngaged": 6,
+    "staffingStatus": "strained",
+    "fatigueLevel": 55
+  },
+  {
+    "timestamp": "13:00",
+    "nursesOnDuty": 52,
+    "doctorsOnDuty": 18,
+    "onCallEngaged": 8,
+    "staffingStatus": "critical",
+    "fatigueLevel": 70
+  },
+  {
+    "timestamp": "14:00",
+    "nursesOnDuty": 58,
+    "doctorsOnDuty": 20,
+    "onCallEngaged": 12,
+    "staffingStatus": "critical",
+    "fatigueLevel": 85
+  },
+  {
+    "timestamp": "15:00",
+    "nursesOnDuty": 60,
+    "doctorsOnDuty": 22,
+    "onCallEngaged": 15,
+    "staffingStatus": "critical",
+    "fatigueLevel": 90
+  },
+  {
+    "timestamp": "16:00",
+    "nursesOnDuty": 60,
+    "doctorsOnDuty": 22,
+    "onCallEngaged": 15,
+    "staffingStatus": "critical",
+    "fatigueLevel": 95
+  },
+  {
+    "timestamp": "17:00",
+    "nursesOnDuty": 58,
+    "doctorsOnDuty": 20,
+    "onCallEngaged": 12,
+    "staffingStatus": "critical",
+    "fatigueLevel": 98
+  },
+  {
+    "timestamp": "18:00",
+    "nursesOnDuty": 55,
+    "doctorsOnDuty": 18,
+    "onCallEngaged": 8,
+    "staffingStatus": "strained",
+    "fatigueLevel": 85
+  },
+  {
+    "timestamp": "19:00",
+    "nursesOnDuty": 52,
+    "doctorsOnDuty": 16,
+    "onCallEngaged": 4,
+    "staffingStatus": "strained",
+    "fatigueLevel": 75
+  },
+  {
+    "timestamp": "20:00",
+    "nursesOnDuty": 48,
+    "doctorsOnDuty": 14,
+    "onCallEngaged": 2,
+    "staffingStatus": "strained",
+    "fatigueLevel": 65
+  },
+  {
+    "timestamp": "21:00",
+    "nursesOnDuty": 45,
+    "doctorsOnDuty": 12,
+    "onCallEngaged": 0,
+    "staffingStatus": "stable",
+    "fatigueLevel": 55
+  },
+  {
+    "timestamp": "22:00",
+    "nursesOnDuty": 42,
+    "doctorsOnDuty": 12,
+    "onCallEngaged": 0,
+    "staffingStatus": "stable",
+    "fatigueLevel": 50
+  }
+]

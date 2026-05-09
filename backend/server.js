@@ -13,6 +13,7 @@ const forecastRoutes = require('./routes/forecast');
 const intelligenceRoutes = require('./routes/intelligence');
 const connectorsRoutes = require('./routes/connectors');
 const operationsRoutes = require('./routes/operations');
+const replayRoutes     = require('./routes/replay');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api/forecast', forecastRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
 app.use('/api/connectors', connectorsRoutes);
 app.use('/api/operations', operationsRoutes);
+app.use('/api/replay', replayRoutes);
 
 // Error Middleware
 app.use(errorHandler);

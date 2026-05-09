@@ -1,0 +1,138 @@
+[
+  {
+    "timestamp": "06:00",
+    "activeAmbulances": 6,
+    "averageETA": 12,
+    "diversionStatus": "none",
+    "trafficSeverity": 2,
+    "weatherImpact": "low"
+  },
+  {
+    "timestamp": "07:00",
+    "activeAmbulances": 8,
+    "averageETA": 15,
+    "diversionStatus": "none",
+    "trafficSeverity": 4,
+    "weatherImpact": "moderate"
+  },
+  {
+    "timestamp": "08:00",
+    "activeAmbulances": 10,
+    "averageETA": 22,
+    "diversionStatus": "none",
+    "trafficSeverity": 6,
+    "weatherImpact": "moderate"
+  },
+  {
+    "timestamp": "09:00",
+    "activeAmbulances": 12,
+    "averageETA": 35,
+    "diversionStatus": "none",
+    "trafficSeverity": 8,
+    "weatherImpact": "severe"
+  },
+  {
+    "timestamp": "10:00",
+    "activeAmbulances": 15,
+    "averageETA": 45,
+    "diversionStatus": "none",
+    "trafficSeverity": 9,
+    "weatherImpact": "severe"
+  },
+  {
+    "timestamp": "11:00",
+    "activeAmbulances": 15,
+    "averageETA": 48,
+    "diversionStatus": "none",
+    "trafficSeverity": 10,
+    "weatherImpact": "severe"
+  },
+  {
+    "timestamp": "12:00",
+    "activeAmbulances": 14,
+    "averageETA": 42,
+    "diversionStatus": "none",
+    "trafficSeverity": 9,
+    "weatherImpact": "severe"
+  },
+  {
+    "timestamp": "13:00",
+    "activeAmbulances": 12,
+    "averageETA": 38,
+    "diversionStatus": "none",
+    "trafficSeverity": 8,
+    "weatherImpact": "moderate"
+  },
+  {
+    "timestamp": "14:00",
+    "activeAmbulances": 10,
+    "averageETA": 30,
+    "diversionStatus": "partial",
+    "trafficSeverity": 7,
+    "weatherImpact": "moderate"
+  },
+  {
+    "timestamp": "15:00",
+    "activeAmbulances": 9,
+    "averageETA": 25,
+    "diversionStatus": "partial",
+    "trafficSeverity": 6,
+    "weatherImpact": "low"
+  },
+  {
+    "timestamp": "16:00",
+    "activeAmbulances": 11,
+    "averageETA": 20,
+    "diversionStatus": "partial",
+    "trafficSeverity": 5,
+    "weatherImpact": "low"
+  },
+  {
+    "timestamp": "17:00",
+    "activeAmbulances": 12,
+    "averageETA": 18,
+    "diversionStatus": "full",
+    "trafficSeverity": 4,
+    "weatherImpact": "low"
+  },
+  {
+    "timestamp": "18:00",
+    "activeAmbulances": 10,
+    "averageETA": 15,
+    "diversionStatus": "partial",
+    "trafficSeverity": 3,
+    "weatherImpact": "low"
+  },
+  {
+    "timestamp": "19:00",
+    "activeAmbulances": 8,
+    "averageETA": 14,
+    "diversionStatus": "none",
+    "trafficSeverity": 3,
+    "weatherImpact": "low"
+  },
+  {
+    "timestamp": "20:00",
+    "activeAmbulances": 6,
+    "averageETA": 12,
+    "diversionStatus": "none",
+    "trafficSeverity": 2,
+    "weatherImpact": "low"
+  },
+  {
+    "timestamp": "21:00",
+    "activeAmbulances": 5,
+    "averageETA": 12,
+    "diversionStatus": "none",
+    "trafficSeverity": 2,
+    "weatherImpact": "low"
+  },
+  {
+    "timestamp": "22:00",
+    "activeAmbulances": 4,
+    "averageETA": 10,
+    "diversionStatus": "none",
+    "trafficSeverity": 1,
+    "weatherImpact": "low"
+  }
+]
