@@ -11,15 +11,7 @@ const statusStyle = {
 };
 
 const DepartmentSection = ({ baseData }) => {
-  const units = useMemo(() => deriveUnitDisposition(baseData), [
-    baseData?.intelligence?.escalation,
-    baseData?.intelligence?.conditions?.ambulanceFlow,
-    baseData?.intelligence?.conditions?.isolationCapacity,
-    baseData?.intelligence?.conditions?.erCongestion,
-    baseData?.intelligence?.conditions?.respiratoryPressure,
-    baseData?.intelligence?.conditions?.staffingStability,
-    baseData?.metrics?.osi,
-  ]);
+  const units = useMemo(() => deriveUnitDisposition(baseData), [baseData]);
 
   const criticalCount = units.filter(u => u.status === 'Critical' || u.status === 'Extreme').length;
 

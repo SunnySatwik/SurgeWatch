@@ -333,6 +333,7 @@ const Dashboard = ({ onBack }) => {
           />
         ) : mode === 'readiness' ? (
           <OperationalReadiness
+            baseData={unifiedBaseData}
             overrides={overrides}
             onOverridesChange={setOverrides}
             operationalSignal={operationalSignal}

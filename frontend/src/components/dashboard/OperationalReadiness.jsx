@@ -12,6 +12,7 @@ import {
   fetchRisk, fetchOperationalMetrics, runRiskAssessment,
   fetchProtocols, activateProtocol, deactivateProtocol, fetchAlerts
 } from '../../utils/operationsService';
+import { deriveUnitDisposition } from '../../utils/unitDispositionEngine';
 import OperationalControlPanel, { DEFAULT_OVERRIDES, overridesToScenario } from './OperationalControlPanel';
 import ReplayControls from './ReplayControls';
 
@@ -192,7 +193,7 @@ const AlertItem = ({ alert }) => {
   );
 };
 
-const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange, operationalSignal = null, replay = null }) => {
+const OperationalReadiness = ({ baseData, overrides = DEFAULT_OVERRIDES, onOverridesChange, operationalSignal = null, replay = null }) => {
   const [risk, setRisk] = useState(null);
   const [metrics, setMetrics] = useState(null);
   const [protocols, setProtocols] = useState([]);
@@ -203,6 +204,8 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
   const [assessing, setAssessing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
+
+  const derivedUnits = React.useMemo(() => deriveUnitDisposition(baseData), [baseData]);
 
   // Wire _jumpTo so ReplayControls can jump to arbitrary frames
   if (replay) {
@@ -645,10 +648,15 @@ const OperationalReadiness = ({ overrides = DEFAULT_OVERRIDES, onOverridesChange
             <h3 className="text-sm font-display font-bold text-slate-800">Unit Pressure</h3>
           </div>
           <div className="space-y-0.5">
-            {beds.map((b, i) => (
-              <BedBar key={i} department={b.department} occupied={b.occupied_beds ?? b.occupied} total={b.total_beds ?? b.total} occupancy={b.occupancy_pct ?? b.occupancy} />
-            ))}
-            {beds.length === 0 && <p className="text-xs text-slate-400 text-center py-4">No unit pressure data</p>}
+            {derivedUnits.map((u, i) => {
+              const rawBed = beds.find(b => b.department === u.name);
+              const total = rawBed?.total_beds ?? rawBed?.total ?? 100;
+              const occupied = Math.round((u.load / 100) * total);
+              return (
+                <BedBar key={i} department={u.name} occupied={occupied} total={total} occupancy={u.load} />
+              );
+            })}
+            {derivedUnits.length === 0 && <p className="text-xs text-slate-400 text-center py-4">No unit pressure data</p>}
           </div>
         </div>
 
