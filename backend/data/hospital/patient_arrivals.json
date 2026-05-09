@@ -1,0 +1,50 @@
+[
+  {
+    "timestamp": "2026-05-09T04:00:00+05:30",
+    "emergencyArrivals": 5,
+    "traumaCases": 2,
+    "respiratoryCases": 2,
+    "pediatricCases": 1,
+    "averageWaitMinutes": 15
+  },
+  {
+    "timestamp": "2026-05-09T05:00:00+05:30",
+    "emergencyArrivals": 3,
+    "traumaCases": 1,
+    "respiratoryCases": 1,
+    "pediatricCases": 0,
+    "averageWaitMinutes": 10
+  },
+  {
+    "timestamp": "2026-05-09T06:00:00+05:30",
+    "emergencyArrivals": 8,
+    "traumaCases": 3,
+    "respiratoryCases": 4,
+    "pediatricCases": 2,
+    "averageWaitMinutes": 25
+  },
+  {
+    "timestamp": "2026-05-09T07:00:00+05:30",
+    "emergencyArrivals": 14,
+    "traumaCases": 5,
+    "respiratoryCases": 6,
+    "pediatricCases": 4,
+    "averageWaitMinutes": 45
+  },
+  {
+    "timestamp": "2026-05-09T08:00:00+05:30",
+    "emergencyArrivals": 22,
+    "traumaCases": 8,
+    "respiratoryCases": 10,
+    "pediatricCases": 6,
+    "averageWaitMinutes": 85
+  },
+  {
+    "timestamp": "2026-05-09T09:00:00+05:30",
+    "emergencyArrivals": 28,
+    "traumaCases": 6,
+    "respiratoryCases": 14,
+    "pediatricCases": 8,
+    "averageWaitMinutes": 115
+  }
+]

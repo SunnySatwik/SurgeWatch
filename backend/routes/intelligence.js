@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const intelligenceEngine = require('../services/intelligenceEngine');
+const hospitalDataService = require('../services/hospitalDataService');
 
 /**
  * @route   POST /api/intelligence/simulate
  * @desc    Process operational scenario and return intelligence payload
  * @access  Public
  */
-router.post('/simulate', (req, res) => {
+router.post('/simulate', async (req, res) => {
     try {
         const { baseData, scenario } = req.body;
 
@@ -17,7 +18,10 @@ router.post('/simulate', (req, res) => {
             });
         }
 
-        const result = intelligenceEngine.processScenario(baseData, scenario);
+        // Fetch real operational hospital state
+        const hospitalState = await hospitalDataService.buildOperationalState();
+
+        const result = intelligenceEngine.processScenario(baseData, scenario, hospitalState);
         res.json(result);
     } catch (error) {
         console.error('Intelligence Engine Error:', error);

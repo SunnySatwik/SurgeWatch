@@ -1,0 +1,44 @@
+[
+  {
+    "timestamp": "2026-05-09T04:00:00+05:30",
+    "respiratoryPositivityRate": 0.12,
+    "testVolume": 450,
+    "viralPressure": "Moderate",
+    "isolationDemandIndex": 0.3
+  },
+  {
+    "timestamp": "2026-05-09T05:00:00+05:30",
+    "respiratoryPositivityRate": 0.14,
+    "testVolume": 480,
+    "viralPressure": "Moderate",
+    "isolationDemandIndex": 0.35
+  },
+  {
+    "timestamp": "2026-05-09T06:00:00+05:30",
+    "respiratoryPositivityRate": 0.18,
+    "testVolume": 520,
+    "viralPressure": "High",
+    "isolationDemandIndex": 0.5
+  },
+  {
+    "timestamp": "2026-05-09T07:00:00+05:30",
+    "respiratoryPositivityRate": 0.22,
+    "testVolume": 600,
+    "viralPressure": "High",
+    "isolationDemandIndex": 0.65
+  },
+  {
+    "timestamp": "2026-05-09T08:00:00+05:30",
+    "respiratoryPositivityRate": 0.28,
+    "testVolume": 750,
+    "viralPressure": "Critical",
+    "isolationDemandIndex": 0.85
+  },
+  {
+    "timestamp": "2026-05-09T09:00:00+05:30",
+    "respiratoryPositivityRate": 0.31,
+    "testVolume": 820,
+    "viralPressure": "Critical",
+    "isolationDemandIndex": 0.92
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "timestamp": "2026-05-09T04:00:00+05:30",
+    "department": "ICU",
+    "occupiedBeds": 18,
+    "totalBeds": 20,
+    "boardingPatients": 0,
+    "isolationBedsOccupied": 4
+  },
+  {
+    "timestamp": "2026-05-09T05:00:00+05:30",
+    "department": "ICU",
+    "occupiedBeds": 19,
+    "totalBeds": 20,
+    "boardingPatients": 1,
+    "isolationBedsOccupied": 5
+  },
+  {
+    "timestamp": "2026-05-09T06:00:00+05:30",
+    "department": "ICU",
+    "occupiedBeds": 20,
+    "totalBeds": 20,
+    "boardingPatients": 2,
+    "isolationBedsOccupied": 6
+  },
+  {
+    "timestamp": "2026-05-09T07:00:00+05:30",
+    "department": "Emergency",
+    "occupiedBeds": 15,
+    "totalBeds": 30,
+    "boardingPatients": 0,
+    "isolationBedsOccupied": 2
+  },
+  {
+    "timestamp": "2026-05-09T08:00:00+05:30",
+    "department": "Emergency",
+    "occupiedBeds": 24,
+    "totalBeds": 30,
+    "boardingPatients": 3,
+    "isolationBedsOccupied": 4
+  },
+  {
+    "timestamp": "2026-05-09T09:00:00+05:30",
+    "department": "Emergency",
+    "occupiedBeds": 29,
+    "totalBeds": 30,
+    "boardingPatients": 7,
+    "isolationBedsOccupied": 5
+  },
+  {
+    "timestamp": "2026-05-09T09:00:00+05:30",
+    "department": "General Ward",
+    "occupiedBeds": 88,
+    "totalBeds": 100,
+    "boardingPatients": 4,
+    "isolationBedsOccupied": 10
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "timestamp": "2026-05-09T04:00:00+05:30",
+    "department": "ICU",
+    "nursesAvailable": 10,
+    "doctorsAvailable": 3,
+    "staffingTarget": 12,
+    "onCallReserve": 2,
+    "fatigueIndex": 0.2
+  },
+  {
+    "timestamp": "2026-05-09T05:00:00+05:30",
+    "department": "ICU",
+    "nursesAvailable": 9,
+    "doctorsAvailable": 3,
+    "staffingTarget": 12,
+    "onCallReserve": 2,
+    "fatigueIndex": 0.35
+  },
+  {
+    "timestamp": "2026-05-09T06:00:00+05:30",
+    "department": "Emergency",
+    "nursesAvailable": 8,
+    "doctorsAvailable": 4,
+    "staffingTarget": 15,
+    "onCallReserve": 3,
+    "fatigueIndex": 0.4
+  },
+  {
+    "timestamp": "2026-05-09T07:00:00+05:30",
+    "department": "Emergency",
+    "nursesAvailable": 12,
+    "doctorsAvailable": 5,
+    "staffingTarget": 15,
+    "onCallReserve": 3,
+    "fatigueIndex": 0.25
+  },
+  {
+    "timestamp": "2026-05-09T08:00:00+05:30",
+    "department": "Emergency",
+    "nursesAvailable": 11,
+    "doctorsAvailable": 5,
+    "staffingTarget": 15,
+    "onCallReserve": 2,
+    "fatigueIndex": 0.55
+  },
+  {
+    "timestamp": "2026-05-09T09:00:00+05:30",
+    "department": "Emergency",
+    "nursesAvailable": 10,
+    "doctorsAvailable": 4,
+    "staffingTarget": 15,
+    "onCallReserve": 1,
+    "fatigueIndex": 0.78
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "timestamp": "2026-05-09T04:00:00+05:30",
+    "activeAmbulances": 4,
+    "averageETA": 12,
+    "diversionActive": false,
+    "trafficSeverity": 2,
+    "incomingCriticalCases": 1
+  },
+  {
+    "timestamp": "2026-05-09T05:00:00+05:30",
+    "activeAmbulances": 3,
+    "averageETA": 10,
+    "diversionActive": false,
+    "trafficSeverity": 1,
+    "incomingCriticalCases": 0
+  },
+  {
+    "timestamp": "2026-05-09T06:00:00+05:30",
+    "activeAmbulances": 5,
+    "averageETA": 15,
+    "diversionActive": false,
+    "trafficSeverity": 3,
+    "incomingCriticalCases": 2
+  },
+  {
+    "timestamp": "2026-05-09T07:00:00+05:30",
+    "activeAmbulances": 8,
+    "averageETA": 22,
+    "diversionActive": false,
+    "trafficSeverity": 5,
+    "incomingCriticalCases": 3
+  },
+  {
+    "timestamp": "2026-05-09T08:00:00+05:30",
+    "activeAmbulances": 12,
+    "averageETA": 45,
+    "diversionActive": true,
+    "trafficSeverity": 9,
+    "incomingCriticalCases": 5
+  },
+  {
+    "timestamp": "2026-05-09T09:00:00+05:30",
+    "activeAmbulances": 10,
+    "averageETA": 52,
+    "diversionActive": true,
+    "trafficSeverity": 10,
+    "incomingCriticalCases": 4
+  }
+]

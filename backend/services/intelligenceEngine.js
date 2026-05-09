@@ -4,7 +4,7 @@
  * Refined for enterprise-grade hospital operational forecasting.
  */
 
-const deriveOperationalConditions = (scenario) => {
+const deriveBaselineConditions = (hospitalState) => {
     let conditions = {
         erCongestion: "nominal",
         ambulanceFlow: "stable",
@@ -17,12 +17,43 @@ const deriveOperationalConditions = (scenario) => {
         regionalContext: "nominal"
     };
 
+    if (hospitalState && hospitalState.operationalState) {
+        const op = hospitalState.operationalState;
+        
+        // Baseline mapping
+        if (op.erCongestion === 'volatile') conditions.erCongestion = "critical boarding failure";
+        else if (op.erCongestion === 'elevated') conditions.erCongestion = "high boarding pressure";
+        
+        if (op.ambulanceFlow === 'critical intake compression') conditions.ambulanceFlow = "critical intake compression";
+        else if (op.ambulanceFlow === 'delayed') conditions.ambulanceFlow = "degraded";
+
+        if (op.respiratoryPressure === 'critical' || op.respiratoryPressure === 'elevated') conditions.respiratoryPressure = "elevated syndromic pressure";
+        
+        if (op.staffingStability === 'fragile' || op.staffingStability === 'strained') {
+            conditions.staffingStability = "fragile ratios";
+            conditions.bedTurnover = "sub-optimal throughput";
+        }
+        
+        if (op.icuPressure === 'critical') conditions.isolationCapacity = "exhausted";
+        else if (op.icuPressure === 'elevated') conditions.isolationCapacity = "strained";
+        
+        // Temporal intelligence integration
+        if (op.intakeAcceleration === 'rapidly worsening') conditions.ambulanceFlow = "critical intake compression";
+        if (op.congestionTrajectory === 'rapidly worsening') conditions.erCongestion = "critical boarding failure";
+        if (op.occupancyMomentum === 'rapidly worsening') conditions.isolationCapacity = "exhausted";
+        if (op.respiratoryEscalation === 'rapidly worsening') conditions.respiratoryPressure = "critical surge strain";
+    }
+
+    return conditions;
+};
+
+const applyScenarioAmplification = (conditions, scenario) => {
     // Regional Transit Intelligence (Bengaluru Specific)
     if (scenario.weather === 2 && scenario.traffic === 1) {
         conditions.ambulanceFlow = "critical intake compression";
         conditions.regionalContext = "Silk Board and Outer Ring Road corridors immobilized; alternate routing required";
     } else if (scenario.weather >= 1 || scenario.traffic === 1) {
-        conditions.ambulanceFlow = "degraded";
+        if (conditions.ambulanceFlow !== "critical intake compression") conditions.ambulanceFlow = "degraded";
         if (scenario.weather >= 1) conditions.regionalContext = "Monsoon flooding at Indiranagar and Hebbal underpasses impacting trauma response";
         else conditions.regionalContext = "Electronic City flyover congestion causing 25+ min inbound delays";
     }
@@ -32,8 +63,8 @@ const deriveOperationalConditions = (scenario) => {
         conditions.isolationCapacity = "exhausted";
         conditions.respiratoryPressure = "critical surge strain";
     } else if (scenario.viral >= 1) {
-        conditions.isolationCapacity = "strained";
-        conditions.respiratoryPressure = "elevated syndromic pressure";
+        if (conditions.isolationCapacity !== "exhausted") conditions.isolationCapacity = "strained";
+        if (conditions.respiratoryPressure !== "critical surge strain") conditions.respiratoryPressure = "elevated syndromic pressure";
     }
 
     // Trauma & Event Intelligence
@@ -41,8 +72,8 @@ const deriveOperationalConditions = (scenario) => {
         conditions.traumaVelocity = "high-velocity volatility";
         conditions.regionalContext = "Chinnaswamy event overflow complicated by monsoon flash flooding; multiple trauma clusters projected";
     } else if (scenario.crowd >= 1) {
-        conditions.traumaVelocity = "elevated presentation rate";
-        conditions.regionalContext = "MG Road/Brigade Road event density driving minor trauma presentation spikes";
+        if (conditions.traumaVelocity !== "high-velocity volatility") conditions.traumaVelocity = "elevated presentation rate";
+        if (conditions.regionalContext === "nominal") conditions.regionalContext = "MG Road/Brigade Road event density driving minor trauma presentation spikes";
     }
 
     // Staffing & Resource Intelligence
@@ -59,8 +90,8 @@ const deriveOperationalConditions = (scenario) => {
         conditions.triagePressure = "overwhelmed";
         conditions.erCongestion = "critical boarding failure";
     } else if (scenario.viral === 1 || scenario.crowd === 2) {
-        conditions.triagePressure = "sustained strain";
-        conditions.erCongestion = "high boarding pressure";
+        if (conditions.triagePressure !== "overwhelmed") conditions.triagePressure = "sustained strain";
+        if (conditions.erCongestion !== "critical boarding failure") conditions.erCongestion = "high boarding pressure";
     }
 
     return conditions;
@@ -182,7 +213,7 @@ const generateCascadingTimeline = (scenario, conditions) => {
     return timeline;
 };
 
-const processScenario = (baseData, scenario) => {
+const processScenario = (baseData, scenario, hospitalState = null) => {
     // 1. Calculate Base Modifiers
     let loadDelta = 0;
     let patientDelta = 0;
@@ -205,13 +236,23 @@ const processScenario = (baseData, scenario) => {
 
     if (scenario.traffic === 1) { loadDelta += 6; }
 
-    // 2. Derive Operational State Layer
-    const conditions = deriveOperationalConditions(scenario);
+    // 2. Derive Operational State Layer (Fusion)
+    let conditions = deriveBaselineConditions(hospitalState);
+    conditions = applyScenarioAmplification(conditions, scenario);
 
     // 3. Interconnected Metric Reasoning
 
+    // Baseline OSI from hospital readiness
+    let baseOsi = 32;
+    let baseLoad = baseData.load;
+    
+    if (hospitalState && hospitalState.readiness) {
+        baseOsi = 100 - hospitalState.readiness.readinessScore;
+        baseLoad = Math.max(baseLoad, hospitalState.metrics.occupancyRate * 100);
+    }
+
     // OSI (Operational Stress Index)
-    let osi = 32 + (scenario.weather * 18) + (scenario.viral * 15) + (scenario.crowd * 10) - (scenario.staffing * 12) + (scenario.traffic * 8);
+    let osi = baseOsi + (scenario.weather * 18) + (scenario.viral * 15) + (scenario.crowd * 10) - (scenario.staffing * 12) + (scenario.traffic * 8);
     // Compound Penalties
     if (scenario.weather === 2 && scenario.traffic === 1) osi += 12;
     if (scenario.viral === 2 && scenario.staffing === -1) osi += 18;
@@ -219,11 +260,13 @@ const processScenario = (baseData, scenario) => {
 
     // Ambulance Delay Risk
     let delayRisk = 10 + (scenario.weather * 28) + (scenario.traffic * 35) + (scenario.crowd * 6);
+    if (hospitalState && hospitalState.metrics && hospitalState.metrics.averageETA > 30) delayRisk += 20;
     if (scenario.weather === 2 && scenario.traffic === 1) delayRisk = 99;
     delayRisk = Math.min(99, Math.max(0, Math.round(delayRisk)));
 
     // ICU Saturation Window (Influenced by OSI, Ambulance Flow, and Clinical Pressure)
     let baseIcuWindow = 24 - (scenario.viral * 10) - (scenario.weather * 4) + (scenario.staffing * 6);
+    if (hospitalState && hospitalState.operationalState && hospitalState.operationalState.icuPressure === 'critical') baseIcuWindow -= 12;
 
     // Interdependency: High transit delay risk compresses the ICU window due to non-linear arrival waves
     if (delayRisk > 60) baseIcuWindow -= 4;
@@ -241,13 +284,18 @@ const processScenario = (baseData, scenario) => {
     let icuWindow = baseIcuWindow < 4 ? '< 4h' : baseIcuWindow < 8 ? '< 8h' : baseIcuWindow < 12 ? '< 12h' : '> 24h';
 
     // Core Dashboard Data
-    let load = Math.min(100, Math.max(0, baseData.load + loadDelta));
+    let load = Math.min(100, Math.max(0, baseLoad + loadDelta));
     let expectedPatients = baseData.expectedPatients + patientDelta;
     let confidence = Math.min(99, Math.max(35, baseData.confidence + confidenceDelta));
 
     // Readiness Score
+    let baseReadinessScore = 100 - (load * 0.4) - (osi * 0.4);
+    if (hospitalState && hospitalState.readiness) {
+        baseReadinessScore = Math.min(baseReadinessScore, hospitalState.readiness.readinessScore);
+    }
+    
     let readinessModifier = scenario.staffing === 1 ? 15 : (scenario.staffing === -1 ? -15 : 0);
-    let readinessScore = 100 - (load * 0.4) - (osi * 0.4) + readinessModifier;
+    let readinessScore = baseReadinessScore + readinessModifier;
     readinessScore = Math.min(100, Math.max(5, Math.round(readinessScore)));
 
     let risk = 'Low';
