@@ -28,143 +28,132 @@ const deriveEmergency = (baseLoad, conditions, metrics) => {
   const { ambulanceFlow, traumaVelocity, erCongestion, triagePressure } = conditions;
   const { osi, delayRisk } = metrics;
 
-  // Ambulance compression directly compresses ER intake
   if (ambulanceFlow === 'critical intake compression') load += 22;
   else if (ambulanceFlow === 'degraded') load += 10;
 
-  // Trauma events drive direct ER surge
   if (traumaVelocity === 'high-velocity volatility') load += 16;
   else if (traumaVelocity === 'elevated presentation rate') load += 8;
 
-  // ER congestion boarding failure locks beds
   if (erCongestion === 'critical boarding failure') load += 12;
   else if (erCongestion === 'high boarding pressure') load += 6;
 
-  // Triage overwhelm adds late-cycle pressure
   if (triagePressure === 'overwhelmed') load += 8;
 
-  // Ambient OSI friction
   load += Math.round(osi * 0.06);
-
   load = clamp(load);
-  return {
-    name: 'Emergency',
-    load,
-    status: statusFromLoad(load),
-    subtitles: [
-      `Intake pressure: ${delayRisk > 60 ? 'Elevated' : 'Nominal'}`,
-      `Triage queue: ${triagePressure === 'overwhelmed' ? 'Saturated' : triagePressure === 'sustained strain' ? 'Strained' : 'Manageable'}`,
-    ],
-  };
+
+  // Derive a single dominant operational indicator
+  let indicator;
+  if (ambulanceFlow === 'critical intake compression') indicator = 'Ambulance diversion compressing intake';
+  else if (triagePressure === 'overwhelmed') indicator = 'Triage queue saturated — divert risk';
+  else if (erCongestion === 'critical boarding failure') indicator = 'Boarding failure — beds locked';
+  else if (traumaVelocity === 'high-velocity volatility') indicator = 'High-velocity trauma surge active';
+  else if (erCongestion === 'high boarding pressure') indicator = 'Boarding pressure increasing';
+  else if (ambulanceFlow === 'degraded') indicator = 'Ambulance transit delayed — intake lag';
+  else if (traumaVelocity === 'elevated presentation rate') indicator = 'Trauma presentation rate elevated';
+  else if (delayRisk > 60) indicator = 'Near intake threshold';
+  else indicator = 'Trauma throughput stable';
+
+  return { name: 'Emergency', load, status: statusFromLoad(load), indicator };
 };
 
 /**
- * ICU
- * Primary stressors: respiratory pressure, isolation capacity, viral load, staffing.
+ * ICU — stressors: respiratory pressure, isolation capacity, viral load, staffing.
  */
 const deriveICU = (baseLoad, conditions, metrics) => {
   let load = baseLoad;
   const { isolationCapacity, respiratoryPressure, staffingStability } = conditions;
   const { icuWindow, osi } = metrics;
 
-  // Isolation exhaustion forces ICU overflow accommodation
   if (isolationCapacity === 'exhausted') load += 25;
   else if (isolationCapacity === 'strained') load += 12;
 
-  // Respiratory surge directly occupies ICU beds
   if (respiratoryPressure === 'critical surge strain') load += 18;
   else if (respiratoryPressure === 'elevated syndromic pressure') load += 8;
 
-  // Staffing fragility prevents bed turnover
   if (staffingStability === 'fragile ratios') load += 10;
 
-  // ICU saturation window feeds back into occupancy
   if (icuWindow === '< 4h') load += 14;
   else if (icuWindow === '< 8h') load += 7;
 
   load = clamp(load);
-  return {
-    name: 'ICU',
-    load,
-    status: statusFromLoad(load),
-    subtitles: [
-      `Saturation window: ${icuWindow}`,
-      `Isolation load: ${isolationCapacity === 'exhausted' ? 'Critical' : isolationCapacity === 'strained' ? 'Elevated' : 'Normal'}`,
-    ],
-  };
+
+  let indicator;
+  if (isolationCapacity === 'exhausted' && respiratoryPressure === 'critical surge strain') indicator = 'Isolation capacity exhausted — overflow risk';
+  else if (icuWindow === '< 4h') indicator = 'Saturation imminent — under 4h capacity';
+  else if (icuWindow === '< 8h') indicator = 'Approaching saturation — under 8h window';
+  else if (isolationCapacity === 'exhausted') indicator = 'Isolation capacity exhausted';
+  else if (respiratoryPressure === 'critical surge strain') indicator = 'Respiratory intake driving ICU demand';
+  else if (isolationCapacity === 'strained') indicator = 'Isolation capacity constrained';
+  else if (respiratoryPressure === 'elevated syndromic pressure') indicator = 'Respiratory intake elevated';
+  else if (staffingStability === 'fragile ratios') indicator = 'Bed turnover slowed by staffing strain';
+  else indicator = 'Capacity within safe operating range';
+
+  return { name: 'ICU', load, status: statusFromLoad(load), indicator };
 };
 
 /**
- * General Ward
- * Primary stressors: bed turnover, inpatient overflow, staffing stability.
+ * General Ward — stressors: bed turnover, inpatient overflow, staffing stability.
  */
 const deriveGeneralWard = (baseLoad, conditions, metrics) => {
   let load = baseLoad;
   const { bedTurnover, staffingStability, erCongestion } = conditions;
   const { osi } = metrics;
 
-  // Sub-optimal turnover backs up beds
   if (bedTurnover === 'sub-optimal throughput') load += 12;
   else if (bedTurnover === 'accelerated disposition') load -= 8;
 
-  // ER overflow spills into ward
   if (erCongestion === 'critical boarding failure') load += 14;
   else if (erCongestion === 'high boarding pressure') load += 6;
 
-  // Staffing strain reduces throughput
   if (staffingStability === 'fragile ratios') load += 8;
   else if (staffingStability === 'reinforced surge posture') load -= 5;
 
-  // Ambient OSI
   load += Math.round(osi * 0.04);
-
   load = clamp(load);
-  return {
-    name: 'General Ward',
-    load,
-    status: statusFromLoad(load),
-    subtitles: [
-      `Bed turnover: ${bedTurnover === 'accelerated disposition' ? 'Optimized' : bedTurnover === 'sub-optimal throughput' ? 'Degraded' : 'Nominal'}`,
-      `Overflow risk: ${erCongestion === 'critical boarding failure' ? 'High' : 'Low'}`,
-    ],
-  };
+
+  let indicator;
+  if (erCongestion === 'critical boarding failure' && bedTurnover === 'sub-optimal throughput') indicator = 'ER overflow — beds backing up';
+  else if (erCongestion === 'critical boarding failure') indicator = 'ER overflow spilling into ward';
+  else if (bedTurnover === 'sub-optimal throughput') indicator = 'Discharge backlog slowing bed availability';
+  else if (staffingStability === 'fragile ratios') indicator = 'Staffing strain reducing throughput';
+  else if (erCongestion === 'high boarding pressure') indicator = 'ER pressure elevating inpatient load';
+  else if (bedTurnover === 'accelerated disposition') indicator = 'Discharge pace optimized';
+  else indicator = 'Ward capacity stable';
+
+  return { name: 'General Ward', load, status: statusFromLoad(load), indicator };
 };
 
 /**
- * Radiology
- * Primary stressors: trauma surge, ER boarding, overall system load.
+ * Radiology — stressors: trauma surge, ER boarding, overall system load.
  */
 const deriveRadiology = (baseLoad, conditions, metrics) => {
   let load = baseLoad;
   const { traumaVelocity, erCongestion } = conditions;
   const { osi } = metrics;
 
-  // Trauma surges drive immediate imaging demand
   if (traumaVelocity === 'high-velocity volatility') load += 18;
   else if (traumaVelocity === 'elevated presentation rate') load += 9;
 
-  // ER boarding pressure chains into imaging backlog
   if (erCongestion === 'critical boarding failure') load += 10;
   else if (erCongestion === 'high boarding pressure') load += 5;
 
-  // System-wide stress correlates with imaging demand
   load += Math.round(osi * 0.05);
-
   load = clamp(load);
-  return {
-    name: 'Radiology',
-    load,
-    status: statusFromLoad(load),
-    subtitles: [
-      `Imaging demand: ${traumaVelocity !== 'baseline' ? 'Elevated' : 'Nominal'}`,
-      `Queue pressure: ${erCongestion !== 'nominal' ? 'Rising' : 'Stable'}`,
-    ],
-  };
+
+  let indicator;
+  if (traumaVelocity === 'high-velocity volatility') indicator = 'Trauma surge driving imaging backlog';
+  else if (traumaVelocity === 'elevated presentation rate' && erCongestion !== 'nominal') indicator = 'Imaging demand elevated — queue building';
+  else if (erCongestion === 'critical boarding failure') indicator = 'ER boarding creating imaging backlog';
+  else if (traumaVelocity === 'elevated presentation rate') indicator = 'Imaging demand elevated';
+  else if (erCongestion === 'high boarding pressure') indicator = 'Queue pressure rising from ER load';
+  else indicator = 'Imaging throughput within normal range';
+
+  return { name: 'Radiology', load, status: statusFromLoad(load), indicator };
 };
 
 /**
- * Pediatrics
- * Stressors: viral outbreaks, seasonal trends, overall system load.
+ * Pediatrics — stressors: viral outbreaks, seasonal trends, overall system load.
  */
 const derivePediatrics = (baseLoad, conditions, metrics) => {
   let load = baseLoad;
@@ -180,15 +169,15 @@ const derivePediatrics = (baseLoad, conditions, metrics) => {
   load += Math.round(osi * 0.03);
   load = clamp(load);
 
-  return {
-    name: 'Pediatrics',
-    load,
-    status: statusFromLoad(load),
-    subtitles: [
-      `Respiratory load: ${respiratoryPressure !== 'stable' ? 'Elevated' : 'Normal'}`,
-      `Isolation demand: ${isolationCapacity === 'exhausted' ? 'Critical' : isolationCapacity === 'strained' ? 'High' : 'Low'}`,
-    ],
-  };
+  let indicator;
+  if (respiratoryPressure === 'critical surge strain' && isolationCapacity === 'exhausted') indicator = 'Viral surge — isolation at capacity limit';
+  else if (respiratoryPressure === 'critical surge strain') indicator = 'Respiratory surge protocol active';
+  else if (isolationCapacity === 'exhausted') indicator = 'Isolation rooms fully occupied';
+  else if (respiratoryPressure === 'elevated syndromic pressure') indicator = 'Respiratory intake elevated';
+  else if (isolationCapacity === 'strained') indicator = 'Isolation capacity constrained';
+  else indicator = 'Pediatric intake within baseline';
+
+  return { name: 'Pediatrics', load, status: statusFromLoad(load), indicator };
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────

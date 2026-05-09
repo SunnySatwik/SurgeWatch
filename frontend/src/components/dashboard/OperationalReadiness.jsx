@@ -606,20 +606,50 @@ const OperationalReadiness = ({
           </div>
           <div className="space-y-3">
             {staffing.map((s, i) => {
-              const statusColors = {
-                adequate: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-                strained: 'bg-amber-50 text-amber-600 border-amber-100',
-                critical: 'bg-red-50 text-red-600 border-red-100',
-              };
+              // Translate abstract metrics into an operational readiness condition
+              const totalStaff = (s.nurses_on_duty || 0) + (s.doctors_on_duty || 0);
+              const onCall = s.on_call_available || 0;
+              const ratio = s.nurse_patient_ratio;
+              const cs = s.coverage_status;
+
+              let condition;
+              let conditionColor;
+              if (cs === 'critical') {
+                condition = ratio < 0.15
+                  ? `Severely understaffed — on-call reserve required`
+                  : `Coverage critically below safe operating thresholds`;
+                conditionColor = 'text-red-500';
+              } else if (cs === 'strained') {
+                condition = onCall > 0
+                  ? `On-call reserve engaged to maintain coverage`
+                  : `Coverage below recommended nurse-patient ratio`;
+                conditionColor = 'text-amber-500';
+              } else {
+                condition = onCall > 0
+                  ? `Shift fully staffed with on-call standby`
+                  : `Shift fully staffed within safe ratios`;
+                conditionColor = 'text-emerald-600';
+              }
+
+              const statusDot = {
+                adequate: 'bg-emerald-500',
+                strained: 'bg-amber-400',
+                critical: 'bg-red-500',
+              }[cs] || 'bg-emerald-500';
+
               return (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/50 border border-slate-100">
-                  <div>
-                    <p className="text-xs font-bold text-slate-700">{s.department}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{s.nurses_on_duty}N · {s.doctors_on_duty}D · {s.on_call_available} on-call</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-slate-600">{s.nurse_patient_ratio?.toFixed(2) ?? '—'}</span>
-                    <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${statusColors[s.coverage_status] || statusColors.adequate}`}>{s.coverage_status}</span>
+                <div key={i} className="flex items-start justify-between p-3 rounded-xl bg-slate-50/50 border border-slate-100 gap-3">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${statusDot}`} />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-700">{s.department}</p>
+                      <p className={`text-[10px] font-medium mt-0.5 leading-snug ${conditionColor}`}>
+                        {condition}
+                      </p>
+                      <p className="text-[9px] text-slate-400 mt-1">
+                        {totalStaff} on duty{onCall > 0 ? ` · ${onCall} on-call` : ''}
+                      </p>
+                    </div>
                   </div>
                 </div>
               );
