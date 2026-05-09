@@ -48,6 +48,10 @@ const Dashboard = ({ onBack }) => {
   const [overrides, setOverrides] = useState(DEFAULT_OVERRIDES);
   const { scenario, operationalSignal } = useOperationalSync(overrides);
   const replay = useReplayEngine(setOverrides);
+  
+  // Operational Audit Persistence Layer (Session state)
+  const [eventTimeline, setEventTimeline] = useState([]);
+  const lastSignalRef = useRef(null);
 
   // ── Rolling 7-day window derived once per render ──
   const rollingWeek = useMemo(() => getRollingWeek(), []);
@@ -90,6 +94,66 @@ const Dashboard = ({ onBack }) => {
         .catch(err => console.error('Failed to simulate baseline:', err));
     }
   }, [selectedDayIndex, dashboardData, scenario]);
+
+  // ── Operational Audit Persistence Logic ────────────────────────────────────
+  // We handle audit generation here so it persists across page transitions
+  // and captures events even when the Readiness component is unmounted.
+  
+  useEffect(() => {
+    if (!operationalSignal) return;
+
+    const prev = lastSignalRef.current;
+    lastSignalRef.current = operationalSignal;
+
+    if (!prev) return;
+
+    const states = operationalSignal.operationalState;
+    const prevStates = prev.operationalState;
+
+    const changed = 
+      states.ambulanceFlow !== prevStates.ambulanceFlow ||
+      states.icuPressure !== prevStates.icuPressure ||
+      states.staffingStability !== prevStates.staffingStability ||
+      states.respiratoryPressure !== prevStates.respiratoryPressure ||
+      states.erCongestion !== prevStates.erCongestion ||
+      states.escalationRisk !== prevStates.escalationRisk;
+
+    if (!changed) return;
+
+    const newEvents = (operationalSignal.telemetryEvents || []).map(e => ({
+      id: `${e.title}-${e.type}-${Math.floor(Date.now() / 5000)}`,
+      title: e.title,
+      message: e.message,
+      severity: e.severity,
+      status: e.type || 'active',
+      created_at: new Date().toISOString(),
+    }));
+
+    setEventTimeline(prevTimeline => {
+      const filteredNew = newEvents.filter(ne => {
+        return !prevTimeline.slice(0, 10).some(pe => pe.title === ne.title && pe.status === ne.status);
+      });
+      if (filteredNew.length === 0) return prevTimeline;
+      return [...filteredNew, ...prevTimeline].slice(0, 12);
+    });
+  }, [operationalSignal]);
+
+  useEffect(() => {
+    if (replay?.status === 'playing' && replay?.frameIndex === 0) {
+      setEventTimeline(prev => {
+        const marker = {
+          id: `replay-start-${Date.now()}`,
+          title: `Scenario Replay: ${replay.scenario?.name || 'Simulation'}`,
+          message: 'Initiating operational stress replay sequence.',
+          severity: 'info',
+          status: 'REPLAY EVENT',
+          created_at: new Date().toISOString()
+        };
+        if (prev[0]?.title === marker.title && prev[0]?.status === 'REPLAY EVENT') return prev;
+        return [marker, ...prev].slice(0, 12);
+      });
+    }
+  }, [replay?.status, replay?.frameIndex, replay?.scenario]);
 
   // ── Unified BaseData ──────────────────────────────────────────────────────
   // Merge live operationalSignal intelligence (from override controls) on top
@@ -338,6 +402,8 @@ const Dashboard = ({ onBack }) => {
             onOverridesChange={setOverrides}
             operationalSignal={operationalSignal}
             replay={replay}
+            eventTimeline={eventTimeline}
+            setEventTimeline={setEventTimeline}
           />
         ) : (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start auto-rows-min min-w-0 pb-20">
