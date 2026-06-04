@@ -137,7 +137,13 @@ const DashboardPreview = () => {
   const rotateX = useTransform(smy, [-0.5, 0.5], [5, -5]);
   const cardX  = useTransform(smx, [-0.5, 0.5], [-22, 22]);
   const cardY  = useTransform(smy, [-0.5, 0.5], [-16, 16]);
-  const bars = [40, 62, 48, 88, 72, 55, 65];
+  const [bars, setBars] = useState([40, 62, 48, 88, 72, 55, 65]);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setBars(p => p.map(v => Math.max(22, Math.min(93, v + (Math.random() - 0.5) * 11))));
+    }, 2200);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div
@@ -217,12 +223,11 @@ const DashboardPreview = () => {
                       initial={{ scaleY: 0, opacity: 0 }}
                       animate={{ scaleY: 1, opacity: 1 }}
                       transition={{ delay: 0.95 + i * 0.07, duration: 0.55, ease: [0.22,1,0.36,1] }}
-                      className="flex-1 rounded-sm"
+                      className="flex-1 rounded-sm live-bar"
                       style={{
                         height: `${h}%`,
                         background: `linear-gradient(to top, rgba(37,99,235,0.65), rgba(79,70,229,0.22))`,
                         transformOrigin: 'bottom',
-                        animation: `telemetry-shimmer 2.5s ease-in-out ${0.95 + i * 0.4}s infinite`,
                       }}
                     />
                   ))}
@@ -245,7 +250,7 @@ const DashboardPreview = () => {
                     className="flex-1 vision-glass-light rounded-[1.25rem] p-4 border-white/50"
                   >
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{card.label}</p>
-                    <p className={`text-xl font-mono font-bold kpi-live ${card.color}`}>{card.value}</p>
+                    <p className={`text-xl font-mono font-bold kpi-shimmer ${card.color}`}>{card.value}</p>
                   </motion.div>
                 ))}
               </div>
@@ -313,19 +318,21 @@ const Landing = ({ onLaunch }) => (
 
     {/* ── Cinematic Ambient Layer ── */}
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-      {/* Drifting gradient mesh */}
-      <div className="ambient-mesh mesh-1 w-[900px] h-[900px] -top-64 -right-64 opacity-45"
-        style={{ background: 'radial-gradient(circle, rgba(167,139,250,0.35), rgba(196,181,253,0.15))' }} />
-      <div className="ambient-mesh mesh-2 w-[700px] h-[700px] top-1/3 -left-48 opacity-28"
-        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.28), rgba(67,56,202,0.12))' }} />
-      <div className="ambient-mesh mesh-3 w-[500px] h-[500px] bottom-0 right-1/4 opacity-22"
-        style={{ background: 'radial-gradient(circle, rgba(251,207,232,0.35), rgba(253,186,116,0.12))' }} />
-      {/* Atmospheric pulse orb */}
-      <div className="atmos-pulse absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.06), transparent 70%)' }} />
-      {/* Operational scan lines */}
+      {/* Faint operational grid */}
+      <div className="hero-grid absolute inset-0" />
+      {/* Independently drifting light orbs */}
+      <div className="hero-orb-a absolute w-[920px] h-[920px] -top-72 -right-72 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(167,139,250,0.32), rgba(196,181,253,0.12))', filter: 'blur(90px)' }} />
+      <div className="hero-orb-b absolute w-[720px] h-[720px] top-1/3 -left-52 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.26), rgba(67,56,202,0.10))', filter: 'blur(80px)' }} />
+      <div className="hero-orb-c absolute w-[520px] h-[520px] bottom-0 right-1/4 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(251,207,232,0.30), rgba(253,186,116,0.10))', filter: 'blur(70px)' }} />
+      {/* Intelligence heartbeat core */}
+      <div className="intel-heartbeat absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.09), transparent 65%)' }} />
+      {/* Operational scan lines texture */}
       <div className="scan-lines inset-0" />
-      {/* Moving scan sweep */}
+      {/* Moving scan sweeps */}
       <div className="scan-sweep" />
       <div className="scan-sweep scan-sweep-2" />
       {/* Ambient drifting particles */}
@@ -340,14 +347,25 @@ const Landing = ({ onLaunch }) => (
         { w:3, h:3, top:'85%', left:'70%', dur:'34s', delay:'-22s', px:'15px', py:'-20px', op:0.06 },
       ].map((p, i) => (
         <div key={i} className="ambient-particle" style={{
-          width: p.w, height: p.h,
-          top: p.top, left: p.left,
-          '--dur': p.dur, '--delay': p.delay,
-          '--px': p.px, '--py': p.py,
-          '--p-opacity': p.op,
-          background: i % 2 === 0
-            ? 'rgba(99,102,241,0.18)'
-            : 'rgba(37,99,235,0.15)',
+          width: p.w, height: p.h, top: p.top, left: p.left,
+          '--dur': p.dur, '--delay': p.delay, '--px': p.px, '--py': p.py, '--p-opacity': p.op,
+          background: i % 2 === 0 ? 'rgba(99,102,241,0.18)' : 'rgba(37,99,235,0.15)',
+        }} />
+      ))}
+      {/* Signal mote trails — slow upward drift, fade in/out */}
+      {[
+        { s:3, top:'82%', left:'14%', dur:'9s',  delay:'0s',   x:'12px',  y:'-70px',  op:0.13, c:'rgba(99,102,241,0.5)' },
+        { s:2, top:'70%', left:'35%', dur:'11s', delay:'-3s',  x:'-8px',  y:'-55px',  op:0.10, c:'rgba(37,99,235,0.5)'  },
+        { s:3, top:'78%', left:'60%', dur:'8s',  delay:'-6s',  x:'10px',  y:'-65px',  op:0.12, c:'rgba(99,102,241,0.5)' },
+        { s:2, top:'88%', left:'80%', dur:'13s', delay:'-2s',  x:'-12px', y:'-80px',  op:0.09, c:'rgba(37,99,235,0.5)'  },
+        { s:2, top:'75%', left:'48%', dur:'10s', delay:'-8s',  x:'6px',   y:'-60px',  op:0.11, c:'rgba(79,70,229,0.5)'  },
+      ].map((m, i) => (
+        <div key={i} className="signal-mote" style={{
+          width: m.s, height: m.s, top: m.top, left: m.left,
+          '--mote-dur': m.dur, '--mote-delay': m.delay,
+          '--mote-x': m.x, '--mote-y': m.y, '--mote-op': m.op,
+          background: m.c,
+          boxShadow: `0 0 4px ${m.c}`,
         }} />
       ))}
     </div>
