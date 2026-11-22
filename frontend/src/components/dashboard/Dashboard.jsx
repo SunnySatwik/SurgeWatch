@@ -26,6 +26,7 @@ import WeatherWidget from './WeatherWidget';
 import ScenarioSimulator from './ScenarioSimulator';
 import IntegrationHub from './IntegrationHub';
 import OperationalReadiness from './OperationalReadiness';
+import AIAssistant from './AIAssistant';
 
 const riskConfig = {
   Critical: { badge: 'risk-badge-critical', glow: 'risk-critical', dot: 'bg-red-500' },
@@ -210,6 +211,7 @@ const Dashboard = ({ onBack }) => {
       onMouseMove={handleMouseMove}
       className="min-h-screen flex overflow-hidden font-sans relative bg-vision-bg"
     >
+      <AIAssistant />
       {/* ── Ambient Background ── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="ambient-glow glow-lavender w-[900px] h-[900px] -top-48 -left-48 opacity-60"
