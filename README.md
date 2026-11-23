@@ -83,8 +83,13 @@ A location-aware system that goes beyond simple forecasts:
    ```bash
    cd backend
    npm install
+   copy .env.example .env
    npm run start
    ```
+
+   Set `GEMINI_API_KEY` in `backend/.env` to enable the read-only AI operations
+   assistant. The key is used only by the backend and is never exposed to the
+   React frontend.
 
 3. **Setup Frontend:**
    ```bash

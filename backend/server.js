@@ -14,6 +14,7 @@ const intelligenceRoutes = require('./routes/intelligence');
 const connectorsRoutes = require('./routes/connectors');
 const operationsRoutes = require('./routes/operations');
 const replayRoutes     = require('./routes/replay');
+const assistantRoutes = require('./routes/assistant');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -31,6 +32,7 @@ app.use('/api/intelligence', intelligenceRoutes);
 app.use('/api/connectors', connectorsRoutes);
 app.use('/api/operations', operationsRoutes);
 app.use('/api/replay', replayRoutes);
+app.use('/api/assistant', assistantRoutes);
 
 // Error Middleware
 app.use(errorHandler);
